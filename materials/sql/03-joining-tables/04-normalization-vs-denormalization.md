@@ -305,8 +305,8 @@ DimProduct (
 **Trade-off:**
 - ✅ No joins needed in queries
 - ✅ Faster query performance
-- ❌ More storage (CategoryName repeated for each product)
-- ❌ Updates harder (change CategoryName requires updating all products)
+- ❌ More storage (CategoryName repeated for each product) - in columnar storage, this is typically not a problem because the columns are stored in a compressed format.
+- ❌ Updates harder (change CategoryName requires updating all products) - typically we don't update analytical data directly, only through ETL processes.
 
 ### 2. Pre-Aggregated Summary Tables
 
@@ -359,7 +359,8 @@ GROUP BY p.ProductID;
 CREATE UNIQUE CLUSTERED INDEX IX_vwProductSales ON vwProductSales(ProductID);
 ```
 
-The view is **physically stored** and auto-maintained.
+The view is **physically stored** and auto-maintained, essentially this is a pre aggregated fully managed table which makes it easier to maintain but have some limitations.
+Useful when you have a not too complicated query that is ran frequently and should have good performance.
 
 ## Big Data Context
 

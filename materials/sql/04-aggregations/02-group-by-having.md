@@ -118,34 +118,6 @@ HAVING COUNT(od.OrderID) > 50
 ORDER BY TimesSold DESC;
 ```
 
-## Advanced Insights
-
-### GROUP BY with Expressions
-
-```sql
--- Group by computed column
-SELECT 
-    YEAR(OrderDate) AS Year,
-    MONTH(OrderDate) AS Month,
-    COUNT(*) AS OrderCount
-FROM Orders
-GROUP BY YEAR(OrderDate), MONTH(OrderDate)
-ORDER BY Year, Month;
-```
-
-### NULL in GROUP BY
-
-NULLs form their own group:
-
-```sql
-SELECT 
-    Region,
-    COUNT(*) AS CustomerCount
-FROM Customers
-GROUP BY Region;
--- Result includes one row where Region = NULL
-```
-
 ## Big Data Context
 
 **Group by cardinality** matters:

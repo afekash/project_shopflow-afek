@@ -303,6 +303,7 @@ WHERE c.Country = 'USA';
 
 **For OUTER JOINs, they're different!**
 
+What is the difference here?
 ```sql
 -- Filter in JOIN: Include all Orders, but only USA customer info
 FROM Orders o

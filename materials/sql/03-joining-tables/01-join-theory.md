@@ -249,26 +249,6 @@ FROM Products p
         AND p.UnitPrice < pt.MaxPrice;
 ```
 
-## Big Data Context: Join Explosion Risk
-
-In data lakes with **denormalized** data, accidental Cartesian products can be catastrophic:
-
-```sql
--- Events table: 10 billion rows
--- Dimensions table: 1,000 rows
-
--- ❌ Missing join condition = 10 trillion rows!
-SELECT e.*, d.*
-FROM events e, dimensions d;
--- Would take days to execute and fill your entire cluster storage
-```
-
-**Safeguards:**
-1. **Set row limits** in exploratory queries
-2. **Use EXPLAIN** to check estimated cardinality before running
-3. **Monitor execution** - kill runaway queries
-4. **Enforce foreign keys** in OLTP (prevents bad data)
-
 ## Practical Examples
 
 ### Example 1: Verify Cardinality

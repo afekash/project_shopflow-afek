@@ -4,10 +4,67 @@
 
 Recursive CTEs call themselves, useful for hierarchical or graph data (org charts, bill of materials, path finding).
 
+## Recursion Overview
+
+**Recursion** is a problem-solving strategy that tackles complex problems by decomposing them into progressively simpler sub-problems of the same type. Rather than attempting to solve a large, intricate problem all at once, recursion breaks it down into smaller instances that are easier to handle. Each smaller problem is solved individually, and the solutions are combined to resolve the original problem.
+
+This approach is particularly effective when:
+- There is no straight forward way to solve the problem directly.
+- A problem can be naturally divided into similar, smaller versions of itself
+- The smallest version of the problem has a straightforward, direct solution
+- The solution to the larger problem can be constructed from solutions to smaller instances
+
+**Example Problems:**
+1. Opening nested boxes / Russian dolls / zipped folders
+    - Question: “How many items are inside all these containers?”
+    - Recursive step: For each container, open it and do the same counting on what’s inside.
+    - Base case: A container is empty or contains only non-containers (plain items).
+2. “Explain a term using simpler words” (dictionary lookups)
+    - Question: “What does this term mean?”
+    - Recursive step: Look it up; if the definition contains terms you don’t know, look those up too.
+    - Base case: All terms in the definition are known.
+
+**The Recursive Process:**
+
+Every recursive solution requires two essential components:
+
+1. **Base Case**: The simplest version of the problem that can be solved directly without further decomposition. This acts as the stopping point.
+2. **Recursive Case**: The logic that reduces the current problem into a smaller instance, moving progressively toward the base case.
+
+Technically, this decomposition strategy is implemented by having a function call itself with modified parameters that represent the simpler sub-problem. Each call handles one level of the problem, and the solutions propagate back up to construct the final answer.
+
+**Example Problem**: Calculate the factorial of a number (e.g., 5! = 5 × 4 × 3 × 2 × 1 = 120)
+
+The factorial of 5 seems complex initially, but we can observe that 5! = 5 × 4!. This breaks our problem into a smaller one. Similarly, 4! = 4 × 3!, and so on, until we reach 1!, which equals 1 (our base case).
+
+**Pseudo Code Solution**:
+```
+function factorial(n):
+    // Base case: the simplest instance we can solve directly
+    if n <= 1:
+        return 1
+    
+    // Recursive case: break down into smaller problem
+    // n! = n × (n-1)!
+    return n * factorial(n - 1)
+
+// Execution trace for factorial(5):
+// 5 * factorial(4)
+//   4 * factorial(3)
+//     3 * factorial(2)
+//       2 * factorial(1)
+//         return 1              ← base case reached
+//       return 2 * 1 = 2        ← solving 2!
+//     return 3 * 2 = 6          ← solving 3!
+//   return 4 * 6 = 24           ← solving 4!
+// return 5 * 24 = 120           ← solving 5! (original problem)
+```
+
+
 ## Syntax
 
 ```sql
-WITH RECURSIVE cte_name AS (
+WITH cte_name AS (
     -- Anchor: Base case
     SELECT ...
     
@@ -20,8 +77,6 @@ WITH RECURSIVE cte_name AS (
 )
 SELECT * FROM cte_name;
 ```
-
-**T-SQL note:** Omit `RECURSIVE` keyword (implied).
 
 ## Employee Hierarchy Example
 
