@@ -1,0 +1,29 @@
+---
+description: Format and reproducibility standards for course materials
+globs: materials/**/*.md
+alwaysApply: false
+---
+
+# Content Format Standards
+
+## File Format (Jupytext)
+
+- Source files are Markdown (`.md`) - these are version controlled
+- Jupytext converts `.md` → `.ipynb` notebooks (gitignored)
+- Students run `uv run python generate_notebooks.py` to generate notebooks
+- Use fenced code blocks with language tags (```python, ```sql, ```bash) - each becomes a notebook cell
+- Structure: concept explanation → code example → exercise
+
+## Code Block Rules
+
+- Every ```python block becomes an executable cell
+- Mark expected outputs with `# Result:` comments
+- Code must be runnable in sequence from top to bottom
+- Use SQLite and standard library when possible (zero-install)
+
+## Reproducibility
+
+- All examples must run on Windows, macOS, Linux
+- Prefer SQLite over external databases
+- Embed sample data in code or provide seed scripts
+- Use Docker only when topic requires it (PostgreSQL features, distributed systems)
