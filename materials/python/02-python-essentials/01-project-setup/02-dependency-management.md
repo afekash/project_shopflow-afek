@@ -8,6 +8,8 @@ Managing external packages is fundamental to Python development. This lesson com
 
 ### Basic pip Usage
 
+**Run this in the Jupyter notebook:**
+
 ```python
 import subprocess
 import sys
@@ -29,6 +31,8 @@ subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"
 ```
 
 ### Version Specifiers
+
+**Run this in the Jupyter notebook:**
 
 ```python
 # Create a requirements.txt showing different version constraints
@@ -60,6 +64,8 @@ print("Version specifier examples written to requirements-examples.txt")
 
 ### The Problem with `requirements.txt`
 
+**Run this in the Jupyter notebook:**
+
 ```python
 # requirements.txt
 with open("requirements.txt", "w") as f:
@@ -76,6 +82,8 @@ What's the problem? These constraints allow different versions to be installed:
 Result: "It works on my machine" bugs.
 
 ### Solution: `pip freeze` and Lockfiles
+
+**Run this in the Jupyter notebook:**
 
 ```python
 import subprocess
@@ -101,6 +109,8 @@ with open("requirements-lock.txt", "w") as f:
 
 - `requirements.txt`: High-level dependencies with flexible versions
 - `requirements-lock.txt`: Exact versions from `pip freeze`, for reproducible installs
+
+**Run this in the Jupyter notebook:**
 
 ```python
 # Typical workflow
@@ -137,6 +147,8 @@ These issues led to the creation of modern alternatives.
 
 ### Installing uv
 
+**Run this in your terminal:**
+
 ```bash
 # On macOS/Linux
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -150,7 +162,12 @@ pip install uv
 
 ### Creating a Project with uv
 
+**Run this in your terminal** (open a new terminal in VS Code with Terminal → New Terminal to ensure you start from the workspace root):
+
 ```bash
+# Navigate to the workspace root (the john-bryce directory)
+# For example: cd ~/code/john-bryce
+
 # Initialize a new project
 uv init my-project
 cd my-project
@@ -164,6 +181,8 @@ cd my-project
 ```
 
 The `pyproject.toml` is the single source of truth:
+
+**Run this in the Jupyter notebook:**
 
 ```python
 # This would be in pyproject.toml (showing as Python for syntax highlighting)
@@ -191,6 +210,8 @@ print("Example pyproject.toml created")
 
 ### Adding Dependencies
 
+**Run this in your terminal** (from inside your project directory):
+
 ```bash
 # Add a dependency (automatically updates pyproject.toml and uv.lock)
 uv add pandas
@@ -212,6 +233,8 @@ When you run `uv add`, uv:
 ### The Lockfile: `uv.lock`
 
 The `uv.lock` file captures the entire dependency tree with exact versions and hashes:
+
+**Run this in the Jupyter notebook:**
 
 ```python
 example_lock = """
@@ -245,6 +268,8 @@ This lockfile ensures **identical installs** across all environments.
 
 ### Running Code with uv
 
+**Run this in your terminal** (from inside your project directory):
+
 ```bash
 # Run a script (uv handles the virtual environment automatically)
 uv run python main.py
@@ -260,6 +285,8 @@ uv run python main.py
 **Key insight:** With `uv run`, you don't need to manually activate a virtual environment. `uv` creates and manages it for you.
 
 ### Syncing Dependencies
+
+**Run this in your terminal:**
 
 ```bash
 # Install exact versions from uv.lock
@@ -306,6 +333,8 @@ In production environments (servers, containers, scheduled jobs), you need repro
 
 Most Python applications are deployed in Docker containers. Here's the typical pattern:
 
+**Run this in the Jupyter notebook:**
+
 ```python
 # Example Dockerfile (shown as Python string for Jupytext compatibility)
 dockerfile_content = '''
@@ -341,6 +370,8 @@ print("Example Dockerfile created")
 ### Using uv in Docker
 
 For faster builds, you can use `uv` in Docker:
+
+**Run this in the Jupyter notebook:**
 
 ```python
 dockerfile_uv = '''
@@ -379,6 +410,8 @@ print("Example Dockerfile with uv created")
 
 For production, use multi-stage builds to minimize image size:
 
+**Run this in the Jupyter notebook:**
+
 ```python
 dockerfile_multistage = '''
 # Stage 1: Build dependencies
@@ -415,6 +448,8 @@ print("Multi-stage Dockerfile created")
 This produces smaller images because the final stage doesn't include build tools.
 
 ### CI/CD Pipeline Example
+
+**Run this in the Jupyter notebook:**
 
 ```python
 # Example GitHub Actions workflow
@@ -469,6 +504,8 @@ Even if you use `uv` locally, you'll encounter `pip` in:
 
 Specify which Python version your project needs:
 
+**Run this in the Jupyter notebook:**
+
 ```python
 with open(".python-version", "w") as f:
     f.write("3.11\n")
@@ -481,6 +518,8 @@ Tools like `pyenv` and `uv` automatically use this version when they see this fi
 ### Development vs Production Dependencies
 
 Separate dependencies you need for development (testing, linting) from production dependencies:
+
+**Run this in the Jupyter notebook:**
 
 ```python
 # In pyproject.toml
@@ -506,6 +545,8 @@ print(pyproject_with_dev_deps)
 
 Install dev dependencies:
 
+**Run this in your terminal:**
+
 ```bash
 # With pip
 pip install -e ".[dev]"
@@ -523,6 +564,8 @@ In large organizations, dependency management involves additional concerns:
 
 Companies often host internal packages on private registries (e.g., AWS CodeArtifact, JFrog Artifactory):
 
+**Run this in the Jupyter notebook:**
+
 ```python
 # Configure pip to use private registry
 pip_conf = """
@@ -539,6 +582,8 @@ print(pip_conf)
 
 Production systems scan dependencies for known vulnerabilities:
 
+**Run this in your terminal:**
+
 ```bash
 # Using pip-audit
 pip install pip-audit
@@ -552,6 +597,8 @@ safety check -r requirements-lock.txt
 ### Monorepo Dependency Management
 
 In monorepos with multiple Python projects:
+
+**Run this in the Jupyter notebook:**
 
 ```python
 # Shared dependencies in root pyproject.toml

@@ -12,7 +12,7 @@ These exercises reinforce the concepts from all four lesson sections: project se
 
 ### Tasks
 
-1. Initialize a new project called `data-processor` using uv
+1. Initialize a new project called `data-processor` using uv (create it in the workspace root directory)
 2. Add the following dependencies:
    - `requests` (for API calls)
    - `pandas` (for data processing)
@@ -25,7 +25,12 @@ These exercises reinforce the concepts from all four lesson sections: project se
 
 ### Starting Point
 
+**Run this in your terminal** (open a new terminal in VS Code with Terminal → New Terminal to ensure you start from the workspace root):
+
 ```bash
+# You should be in the john-bryce directory (workspace root)
+# If not, navigate there first
+
 # Your terminal commands here
 uv init data-processor
 cd data-processor
@@ -35,6 +40,8 @@ uv add requests pandas
 
 <details>
 <summary><strong>Solution</strong></summary>
+
+**Run this in your terminal** (from the workspace root):
 
 ```bash
 # 1. Initialize project
@@ -87,6 +94,8 @@ ls uv.lock
 
 Export requirements to a `requirements.txt` for Docker deployment:
 
+**Run this in your terminal:**
+
 ```bash
 uv pip freeze > requirements.txt
 ```
@@ -100,6 +109,8 @@ uv pip freeze > requirements.txt
 **Duration**: ~20 minutes
 
 ### Starting Data
+
+**Run this in the Jupyter notebook:**
 
 ```python
 # Customer transactions
@@ -123,6 +134,8 @@ transactions = [
 
 <details>
 <summary><strong>Solution</strong></summary>
+
+**Run this in the Jupyter notebook:**
 
 ```python
 from collections import defaultdict
@@ -209,6 +222,8 @@ Calculate the average transaction amount per category using the grouped data.
 
 ### Starting Code (Procedural)
 
+**Run this in the Jupyter notebook:**
+
 ```python
 import csv
 import json
@@ -253,6 +268,8 @@ def process_json(filepath):
 
 <details>
 <summary><strong>Solution</strong></summary>
+
+**Run this in the Jupyter notebook:**
 
 ```python
 import csv
@@ -371,6 +388,8 @@ Add a third processor type `XmlProcessor` that reads XML files. The base class s
 
 ### Starting Code (Untyped)
 
+**Run this in the Jupyter notebook:**
+
 ```python
 def fetch_items(source):
     """Fetch items from a source"""
@@ -409,6 +428,8 @@ print(doubled)
 
 <details>
 <summary><strong>Solution</strong></summary>
+
+**Run this in the Jupyter notebook:**
 
 ```python
 from typing import TypeVar, Generic, Callable, List
@@ -462,6 +483,8 @@ print(f"Letter codes: {letter_codes}")  # [65, 66, 67]
 
 **How to verify with mypy:**
 
+**Run this in your terminal:**
+
 ```bash
 # Save the code above to typed_pipeline.py
 # Run mypy
@@ -491,6 +514,8 @@ DataSource[str] → fetch_items → List[str]
 ### Bonus Challenge
 
 Create a generic `Pipeline` class that chains `filter_items` and `transform_items` operations:
+
+**Run this in the Jupyter notebook:**
 
 ```python
 class Pipeline(Generic[T]):

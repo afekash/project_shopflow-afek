@@ -7,6 +7,36 @@ Object-oriented programming (OOP) is a way to organize code by bundling data and
 As projects grow, procedural code becomes hard to manage. Let's see the problem:
 
 ```python
+# First, let's create sample data files
+import csv
+import json
+from pathlib import Path
+
+# Create examples directory if it doesn't exist
+Path('examples').mkdir(exist_ok=True)
+
+# Create sample CSV file
+with open('examples/data.csv', 'w', newline='') as f:
+    writer = csv.DictWriter(f, fieldnames=['id', 'name', 'value'])
+    writer.writeheader()
+    writer.writerow({'id': '1', 'name': 'Alice', 'value': '100'})
+    writer.writerow({'id': '2', 'name': 'Bob', 'value': '200'})
+    writer.writerow({'id': '3', 'name': 'Charlie', 'value': '300'})
+    writer.writerow({'id': '4', 'value': '400'})  # Missing 'name' - will be filtered
+
+# Create sample JSON file
+with open('examples/data.json', 'w') as f:
+    json.dump([
+        {'id': 1, 'name': 'Alice', 'value': 100},
+        {'id': 2, 'name': 'Bob', 'value': 200},
+        {'id': 3, 'name': 'Charlie', 'value': 300},
+        {'id': 4, 'value': 400}  # Missing 'name' - will be filtered
+    ], f, indent=2)
+
+print("Sample data files created!")
+```
+
+```python
 # Procedural approach: processing CSV and JSON files
 import csv
 import json
@@ -47,8 +77,12 @@ def process_json(filepath):
     return validated
 
 # Usage
-csv_data = process_csv('data.csv')
-json_data = process_json('data.json')
+csv_data = process_csv('examples/data.csv')
+json_data = process_json('examples/data.json')
+
+print(f"Valid CSV records: {len(csv_data)}")  # Result: 3 (row 4 filtered out)
+print(f"Valid JSON records: {len(json_data)}")  # Result: 3 (item 4 filtered out)
+print(f"Sample CSV data: {csv_data[0]}")  # Result: {'id': '1', 'name': 'Alice', 'value': '100'}
 ```
 
 **Problems:**
@@ -143,7 +177,7 @@ print(f"Balance: ${account.get_balance()}")
 
 ```python
 class Animal:
-    def speak(self):
+    def speak(self) -> str:
         return "Some sound"
 
 class Dog(Animal):

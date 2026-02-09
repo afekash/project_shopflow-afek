@@ -40,13 +40,11 @@ def process_records(data: list[dict], config: dict[str, int]) -> list[dict]:
 
 ```python
 # Demonstrating IDE benefits
-from typing import List, Dict
-
-def get_user(user_id: int) -> Dict[str, str]:
+def get_user(user_id: int) -> dict[str, str]:
     """Fetch user by ID"""
     return {"id": str(user_id), "name": "Alice", "email": "alice@example.com"}
 
-# IDE knows the return type is Dict[str, str]
+# IDE knows the return type is dict[str, str]
 user = get_user(1)
 # Autocomplete will suggest: user["name"], user["email"], etc.
 name = user["name"]  # IDE knows this is a string
@@ -82,18 +80,9 @@ print(calculate_discount(100.0, 0.2))
 ### None and Optional Values
 
 ```python
-from typing import Optional
-
 # Function that might return None
-def find_user(user_id: int) -> Optional[dict]:
+def find_user(user_id: int) -> dict | None:
     """Returns user dict or None if not found"""
-    if user_id == 1:
-        return {"id": 1, "name": "Alice"}
-    return None
-
-# Optional[X] is shorthand for X | None
-def find_user_modern(user_id: int) -> dict | None:
-    """Same as above, using Python 3.10+ syntax"""
     if user_id == 1:
         return {"id": 1, "name": "Alice"}
     return None
@@ -108,6 +97,19 @@ else:
 # Type checkers know user might be None
 # This would be flagged by mypy:
 # print(user["name"])  # Error: user could be None
+
+# Multiple returns example
+def fetch_config(env: str) -> dict[str, str] | None:
+    """Returns config for environment or None"""
+    configs = {
+        "dev": {"host": "localhost", "port": "8000"},
+        "prod": {"host": "api.example.com", "port": "443"}
+    }
+    return configs.get(env)
+
+config = fetch_config("dev")
+if config:
+    print(f"Host: {config['host']}")
 ```
 
 ## Collection Types
@@ -115,64 +117,60 @@ else:
 ### Lists, Dicts, Sets, Tuples
 
 ```python
-from typing import List, Dict, Set, Tuple
-
 # Lists of specific types
-numbers: List[int] = [1, 2, 3, 4, 5]
-names: List[str] = ["Alice", "Bob", "Charlie"]
-
-# Python 3.9+ can use built-in types directly
-numbers_modern: list[int] = [1, 2, 3, 4, 5]
-names_modern: list[str] = ["Alice", "Bob", "Charlie"]
+numbers: list[int] = [1, 2, 3, 4, 5]
+names: list[str] = ["Alice", "Bob", "Charlie"]
 
 # Dictionaries
-user: Dict[str, str] = {"name": "Alice", "email": "alice@example.com"}
-scores: Dict[str, int] = {"Alice": 95, "Bob": 87}
-
-# Modern syntax
+user: dict[str, str] = {"name": "Alice", "email": "alice@example.com"}
+scores: dict[str, int] = {"Alice": 95, "Bob": 87}
 config: dict[str, int] = {"timeout": 30, "retries": 3}
 
 # Sets
-unique_ids: Set[int] = {1, 2, 3}
+unique_ids: set[int] = {1, 2, 3}
 tags: set[str] = {"python", "data", "engineering"}
 
 # Tuples (fixed length)
-point: Tuple[int, int] = (10, 20)
-person: Tuple[str, int, str] = ("Alice", 25, "Engineer")
+point: tuple[int, int] = (10, 20)
+person: tuple[str, int, str] = ("Alice", 25, "Engineer")
 
 # Variable length tuples
-numbers: Tuple[int, ...] = (1, 2, 3, 4, 5)  # Any number of ints
+numbers: tuple[int, ...] = (1, 2, 3, 4, 5)  # Any number of ints
 ```
 
 ### Nested Collections
 
 ```python
-from typing import List, Dict
-
 # List of dictionaries (common in data engineering)
-records: List[Dict[str, str]] = [
+records: list[dict[str, str]] = [
     {"name": "Alice", "city": "NYC"},
     {"name": "Bob", "city": "LA"},
 ]
 
 # Dictionary of lists
-groups: Dict[str, List[str]] = {
+groups: dict[str, list[str]] = {
     "admins": ["alice", "bob"],
     "users": ["charlie", "david"],
 }
 
 # Complex nesting
-api_response: Dict[str, List[Dict[str, int]]] = {
+api_response: dict[str, list[dict[str, int]]] = {
     "results": [
         {"id": 1, "score": 95},
         {"id": 2, "score": 87},
     ]
 }
 
-# Modern syntax is cleaner
-records_modern: list[dict[str, str]] = [
-    {"name": "Alice", "city": "NYC"},
-]
+# More examples
+users_by_city: dict[str, list[dict[str, str | int]]] = {
+    "NYC": [
+        {"name": "Alice", "age": 30},
+        {"name": "Bob", "age": 25},
+    ],
+    "LA": [
+        {"name": "Charlie", "age": 35},
+    ]
+}
 ```
 
 ## Union Types
@@ -180,15 +178,8 @@ records_modern: list[dict[str, str]] = [
 Sometimes a value can be one of several types:
 
 ```python
-from typing import Union
-
-# Union types (old syntax)
-def process_id(user_id: Union[int, str]) -> str:
-    """Accept int or str ID, return str"""
-    return str(user_id)
-
-# Python 3.10+ syntax (preferred)
-def process_id_modern(user_id: int | str) -> str:
+# Union types with | operator
+def process_id(user_id: int | str) -> str:
     """Accept int or str ID, return str"""
     return str(user_id)
 
@@ -210,6 +201,17 @@ config1 = load_config("config.json")
 config2 = load_config({"key": "value"})
 print(config1)
 print(config2)
+
+# Multiple types
+def format_value(value: int | float | str) -> str:
+    """Format different types as strings"""
+    if isinstance(value, (int, float)):
+        return f"{value:.2f}"
+    return value
+
+print(format_value(10))
+print(format_value(10.5))
+print(format_value("text"))
 ```
 
 ## Type Checking with mypy
@@ -240,6 +242,8 @@ message = greet("Alice")
 
 Run mypy from command line:
 
+**Run this in your terminal:**
+
 ```bash
 mypy example.py
 # If there are errors:
@@ -250,6 +254,8 @@ mypy example.py
 ### Configuring mypy
 
 Create `pyproject.toml`:
+
+**Run this in the Jupyter notebook:**
 
 ```python
 # Example mypy configuration (as Python string for Jupytext)
@@ -305,7 +311,6 @@ print(f"Total: {total}")
 ### Type Hints for Data Engineering
 
 ```python
-from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 
 @dataclass
@@ -313,9 +318,9 @@ class DataRecord:
     id: int
     name: str
     value: float
-    tags: List[str]
+    tags: list[str]
 
-def load_records(filepath: str) -> List[DataRecord]:
+def load_records(filepath: str) -> list[DataRecord]:
     """Load records from file"""
     # Simulate loading
     return [
@@ -324,10 +329,10 @@ def load_records(filepath: str) -> List[DataRecord]:
     ]
 
 def filter_records(
-    records: List[DataRecord],
+    records: list[DataRecord],
     min_value: float,
-    required_tag: Optional[str] = None
-) -> List[DataRecord]:
+    required_tag: str | None = None
+) -> list[DataRecord]:
     """Filter records by value and optional tag"""
     result = []
     for record in records:
@@ -336,9 +341,9 @@ def filter_records(
                 result.append(record)
     return result
 
-def aggregate_by_tag(records: List[DataRecord]) -> Dict[str, float]:
+def aggregate_by_tag(records: list[DataRecord]) -> dict[str, float]:
     """Sum values grouped by tag"""
-    totals: Dict[str, float] = {}
+    totals: dict[str, float] = {}
     for record in records:
         for tag in record.tags:
             totals[tag] = totals.get(tag, 0.0) + record.value
@@ -357,14 +362,13 @@ print(f"Aggregated: {aggregated}")
 ### Type Hints for APIs
 
 ```python
-from typing import Dict, List, Optional
 from dataclasses import dataclass
 
 @dataclass
 class ApiResponse:
     status: str
-    data: List[Dict[str, str]]
-    error: Optional[str] = None
+    data: list[dict[str, str]]
+    error: str | None = None
 
 def fetch_users(api_url: str, limit: int = 10) -> ApiResponse:
     """Fetch users from API"""
@@ -378,7 +382,7 @@ def fetch_users(api_url: str, limit: int = 10) -> ApiResponse:
         error=None
     )
 
-def parse_response(response: ApiResponse) -> List[Dict[str, str]]:
+def parse_response(response: ApiResponse) -> list[dict[str, str]]:
     """Extract data from API response"""
     if response.status != "success":
         raise ValueError(f"API error: {response.error}")
@@ -486,14 +490,14 @@ result = process_anything("string")
 |---------|--------|----------|
 | **Basic types** | `int`, `str`, `float`, `bool` | Function parameters, return types |
 | **Collections** | `list[int]`, `dict[str, int]` | Typed containers |
-| **Optional** | `int \| None`, `Optional[int]` | Values that might be None |
-| **Union** | `int \| str`, `Union[int, str]` | Multiple possible types |
+| **Optional** | `int \| None` | Values that might be None |
+| **Union** | `int \| str` | Multiple possible types |
 | **Any** | `Any` | Opt-out of type checking (use rarely) |
 
 **Best Practices:**
 
 1. **Start with function signatures**: Type parameters and return values first
-2. **Use modern syntax**: `list[int]` instead of `List[int]` (Python 3.9+)
+2. **Use built-in syntax**: `list[int]`, `dict[str, int]`, `int | None` (Python 3.9+)
 3. **Run mypy regularly**: Integrate into CI/CD pipeline
 4. **Don't use `Any`** unless absolutely necessary
 5. **Type public APIs**: Internal functions can be less strict

@@ -47,6 +47,8 @@ All lesson materials are written as Jupytext-compatible Markdown. Each Python co
 
 To convert markdown files to Jupyter notebooks, run:
 
+**Run this in your terminal:**
+
 ```bash
 # If you have jupytext installed
 jupytext --to notebook materials/python/02-python-essentials/**/*.md

@@ -14,7 +14,9 @@ However, as projects grow beyond simple scripts, you need structure. This lesson
 
 ## Creating a Project From Scratch
 
-Let's create a basic Python project:
+Let's create a basic Python project.
+
+**Run this in the Jupyter notebook:**
 
 ```python
 import os
@@ -67,6 +69,8 @@ A virtual environment is just a directory containing:
 
 ### Creating a Virtual Environment
 
+**Run this in the Jupyter notebook:**
+
 ```python
 import subprocess
 import sys
@@ -83,7 +87,7 @@ else:
     print("Virtual environment already exists")
 ```
 
-After creating, activate it in your shell:
+**Then activate it in your terminal:**
 
 ```bash
 # On macOS/Linux
@@ -111,8 +115,11 @@ There are two main ways to run Python code:
 
 ### 1. Script Execution
 
+**Run this in your terminal** (after navigating to the project directory):
+
 ```bash
-python main.py
+cd my_data_pipeline/src
+python3 my_data_pipeline/main.py
 ```
 
 This runs `main.py` as a script. The `__name__` variable is set to `"__main__"`, which is why you see:
@@ -125,8 +132,11 @@ if __name__ == "__main__":
 
 ### 2. Module Execution
 
+**Run this in your terminal** (from the project root):
+
 ```bash
-python -m my_data_pipeline.main
+cd my_data_pipeline/src
+python3 -m my_data_pipeline.main
 ```
 
 This runs `main.py` as a module within the `my_data_pipeline` package. Key differences:
@@ -137,31 +147,39 @@ This runs `main.py` as a module within the `my_data_pipeline` package. Key diffe
 
 **Example showing the difference:**
 
-```python
-# save as: my_data_pipeline/src/my_data_pipeline/utils.py
-def greet():
-    return "Hello from utils!"
-```
+**Run this in the Jupyter notebook to create the files:**
 
 ```python
-# save as: my_data_pipeline/src/my_data_pipeline/main.py
-from .utils import greet  # Relative import
+# Create utils.py
+utils_file = Path("my_data_pipeline/src/my_data_pipeline/utils.py")
+utils_file.write_text('''def greet():
+    return "Hello from utils!"
+''')
+
+# Update main.py to use relative import
+main_file = Path("my_data_pipeline/src/my_data_pipeline/main.py")
+main_file.write_text('''from .utils import greet  # Relative import
 
 def run():
     print(greet())
 
 if __name__ == "__main__":
     run()
+''')
+
+print("Created utils.py and updated main.py")
 ```
 
-From `my_data_pipeline/src/`:
+**Then test in your terminal:**
 
 ```bash
+cd my_data_pipeline/src
+
 # This fails with "ImportError: attempted relative import with no known parent package"
-python my_data_pipeline/main.py
+python3 my_data_pipeline/main.py
 
 # This works
-python -m my_data_pipeline.main
+python3 -m my_data_pipeline.main
 ```
 
 ## Project Layout Conventions
@@ -217,7 +235,7 @@ sys.path.insert(0, str(Path("my_project")))
 import my_project  # Imports from source directly
 
 # In src layout, you must install first:
-# python -m pip install -e .
+# Run in terminal: python -m pip install -e .
 # Then import my_project works correctly
 ```
 
@@ -229,9 +247,11 @@ For data engineering projects that will be deployed to production (containers, s
 
 This file marks a directory as a Python package. It runs when you import the package:
 
+**Example - run this in the Jupyter notebook:**
+
 ```python
-# src/my_data_pipeline/__init__.py
-"""My data pipeline package."""
+# Update __init__.py to expose commonly-used functions
+init_content = '''"""My data pipeline package."""
 
 __version__ = "0.1.0"
 
@@ -240,6 +260,11 @@ from .main import run
 from .utils import greet
 
 __all__ = ["run", "greet", "__version__"]
+'''
+
+init_file = Path("my_data_pipeline/src/my_data_pipeline/__init__.py")
+init_file.write_text(init_content)
+print("Updated __init__.py")
 ```
 
 Now users can do:
@@ -260,18 +285,26 @@ from my_data_pipeline.main import run
 
 This makes your package executable with `python -m package_name`:
 
+**Run this in the Jupyter notebook:**
+
 ```python
-# src/my_data_pipeline/__main__.py
-from .main import run
+# Create __main__.py
+main_py_content = '''from .main import run
 
 if __name__ == "__main__":
     run()
+'''
+
+main_py_file = Path("my_data_pipeline/src/my_data_pipeline/__main__.py")
+main_py_file.write_text(main_py_content)
+print("Created __main__.py")
 ```
 
-Now you can run:
+**Now you can run in your terminal:**
 
 ```bash
-python -m my_data_pipeline
+cd my_data_pipeline/src
+python3 -m my_data_pipeline
 # Executes __main__.py, which calls run()
 ```
 
@@ -285,6 +318,8 @@ Python searches for imports in `sys.path`, which includes:
 2. `PYTHONPATH` environment variable directories
 3. Standard library directories
 4. Installed packages in `site-packages/`
+
+**Run this in the Jupyter notebook:**
 
 ```python
 import sys

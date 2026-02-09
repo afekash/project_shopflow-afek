@@ -240,11 +240,11 @@ print(f"Single == double: {single == 'single quotes'}")
 # Unicode support is built-in
 emoji = "🐍 Python 🚀"
 chinese = "你好"
-arabic = "مرحبا"
+hebrew = "מה הולך"
 
 print(f"Emoji: {emoji}")
+print(f"Hebrew: {hebrew}")
 print(f"Chinese: {chinese}")
-print(f"Arabic: {arabic}")
 
 # String length counts characters, not bytes
 print(f"Length of '{emoji}': {len(emoji)} characters")
