@@ -1,6 +1,6 @@
 ---
-description: Format and reproducibility standards for course materials
-globs: materials/**/*.md
+description: Format and reproducibility standards for course materials in python
+globs: materials/python/**/*.md
 alwaysApply: false
 ---
 
