@@ -1,0 +1,24 @@
+[project]
+name = "file-etl"
+version = "0.1.0"
+description = "Demo ETL application for Python Essentials lesson"
+requires-python = ">=3.10"
+dependencies = [
+    "pyodbc>=5.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.0.0",
+    "pytest>=7.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true

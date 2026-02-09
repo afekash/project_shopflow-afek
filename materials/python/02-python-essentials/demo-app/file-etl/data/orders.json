@@ -1,0 +1,122 @@
+[
+  {
+    "id": 101,
+    "customer_id": 1,
+    "amount": 150.50,
+    "status": "completed"
+  },
+  {
+    "id": 102,
+    "customer_id": 2,
+    "amount": 200.00,
+    "status": "pending"
+  },
+  {
+    "id": 103,
+    "customer_id": 1,
+    "amount": 75.25,
+    "status": "completed"
+  },
+  {
+    "id": 104,
+    "customer_id": 3,
+    "amount": 500.00,
+    "status": "completed"
+  },
+  {
+    "id": 105,
+    "customer_id": 5,
+    "amount": 125.75,
+    "status": "pending"
+  },
+  {
+    "id": 106,
+    "customer_id": 2,
+    "amount": 89.99,
+    "status": "completed"
+  },
+  {
+    "id": 107,
+    "customer_id": 8,
+    "amount": 350.00,
+    "status": "completed"
+  },
+  {
+    "id": 108,
+    "customer_id": 4,
+    "amount": 45.50,
+    "status": "cancelled"
+  },
+  {
+    "id": 109,
+    "customer_id": 6,
+    "amount": 275.25,
+    "status": "pending"
+  },
+  {
+    "id": 110,
+    "customer_id": 10,
+    "amount": 99.99,
+    "status": "completed"
+  },
+  {
+    "id": 111,
+    "customer_id": 7,
+    "amount": 180.00,
+    "status": "completed"
+  },
+  {
+    "id": 112,
+    "customer_id": 12,
+    "amount": 220.50,
+    "status": "pending"
+  },
+  {
+    "id": 113,
+    "customer_id": 15,
+    "amount": 399.99,
+    "status": "completed"
+  },
+  {
+    "id": 114,
+    "customer_id": 3,
+    "amount": 67.80,
+    "status": "completed"
+  },
+  {
+    "id": 115,
+    "customer_id": 18,
+    "amount": 425.00,
+    "status": "pending"
+  },
+  {
+    "id": 116,
+    "customer_id": 9,
+    "amount": 155.25,
+    "status": "completed"
+  },
+  {
+    "id": 117,
+    "customer_id": 14,
+    "amount": 88.88,
+    "status": "completed"
+  },
+  {
+    "id": 118,
+    "customer_id": 11,
+    "amount": 310.00,
+    "status": "cancelled"
+  },
+  {
+    "id": 119,
+    "customer_id": 20,
+    "amount": 199.99,
+    "status": "pending"
+  },
+  {
+    "id": 120,
+    "customer_id": 16,
+    "amount": 540.75,
+    "status": "completed"
+  }
+]
