@@ -9,10 +9,12 @@ def main():
     project_root = Path(__file__).parent
     materials_dir = project_root / "materials"
 
-    # Find all .md files in materials/python/ (excluding README files and checkpoints)
+    # Find all .md files under materials/ that contain Python code blocks
     md_files = [
-        f for f in materials_dir.glob("python/**/*.md")
-        if f.name.lower() != "readme.md" and ".ipynb_checkpoints" not in str(f)
+        f for f in materials_dir.glob("**/*.md")
+        if f.name.lower() != "readme.md"
+        and ".ipynb_checkpoints" not in str(f)
+        and "```python" in f.read_text(encoding="utf-8")
     ]
 
     if not md_files:
