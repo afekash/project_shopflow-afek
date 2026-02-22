@@ -127,16 +127,14 @@ SET SHOWPLAN_TEXT OFF;
 
 When discussing query performance, we use **Big O notation** to describe how an algorithm's resource usage (time or space) grows as the input size increases.
 
-### What is Complexity?
+> **Core Concept:** For the full Big O theory -- all complexity classes, the at-scale table (O(n) that takes 1ms on 1,000 rows takes 16 minutes on 1 billion), and language-agnostic examples -- see [Big O Notation](../../core-concepts/01-complexity-and-performance/01-big-o-notation.md).
 
-Complexity analysis answers: "How does performance scale when data grows?"
+Understanding complexity is essential for SQL because the **query optimizer uses cost models based on these same principles**:
 
-- **O(1)** - Constant time: Same speed regardless of data size
-- **O(log n)** - Logarithmic: Doubles data = adds one step (e.g., binary search)
-- **O(n)** - Linear: Doubles data = doubles time (e.g., full table scan)
-- **O(n log n)** - Log-linear: Efficient sorting algorithms
-- **O(n²)** - Quadratic: Doubles data = 4x time (e.g., nested loops)
-- **O(n³)** - Cubic: Doubles data = 8x time (e.g., triple nested loops)
+- An index seek is O(log n) -- the optimizer prefers it when selectivity is high
+- A table scan is O(n) -- the optimizer uses it when it's cheaper than the index (e.g., returning most of the table)
+- A hash join is O(n + m) but requires memory; a nested loop is O(n × m) but uses less memory
+- The optimizer chooses between these based on estimated cardinality and available memory
 
 ### SQL Operation Examples
 
@@ -166,66 +164,13 @@ WHERE o.CustomerID = c.CustomerID;
 -- In practice, the optimizer will use an index on the join condition to optimize the query or use a hash join if the tables are small enough.
 ```
 
-### Python Code Examples
-
-The same complexity concepts apply in programming languages:
-
-```python
-# O(1) - Dictionary/hash lookup
-products = {42: "Chai", 43: "Coffee", 44: "Tea"}
-product = products[42]  # Constant time, regardless of dict size
-
-# O(log n) - Binary search on sorted list
-import bisect
-prices = [5.00, 10.00, 15.00, 18.00, 20.00, 25.00]  # sorted
-index = bisect.bisect_left(prices, 18.00)  # log₂(6) ≈ 3 comparisons
-
-# O(n) - Linear search through list
-products = ["Chai", "Coffee", "Tea", "Sugar", "Salt"]
-for product in products:
-    if "soup" in product.lower():  # Must check every item
-        print(product)
-
-# O(n log n) - Efficient sorting
-prices = [25.00, 10.00, 18.00, 5.00, 20.00]
-sorted_prices = sorted(prices)  # Python's Timsort algorithm
-
-# O(n²) - Nested loops (Cartesian product)
-orders = list(range(830))      # 830 orders
-customers = list(range(91))    # 91 customers
-matches = []
-for order_id in orders:
-    for customer_id in customers:
-        if order_id % 91 == customer_id:  # 830 × 91 = 75,530 checks
-            matches.append((order_id, customer_id))
-
-# O(n³) - Triple nested loop
-categories = list(range(8))
-suppliers = list(range(29))
-products = list(range(77))
-for cat in categories:
-    for sup in suppliers:
-        for prod in products:
-            # 8 × 29 × 77 = 17,864 iterations
-            pass
-```
-
-### Why It Matters in SQL
-
-Understanding complexity helps you:
-
-1. **Predict performance** - Will this query scale to millions of rows?
-2. **Choose indexes** - Turn O(n) scans into O(log n) seeks
-3. **Optimize joins** - O(n log n) hash join vs O(n²) nested loop
-4. **Design schemas** - Denormalization trades space for O(1) lookups
-
 **Rule of thumb**: If you see O(n²) or worse in production queries, investigate immediately. It's often fixable with indexes or query rewrites.
 
 ### Shuffling and Batching in Big Data
 
 When working with distributed systems (like Spark, Hadoop, or distributed databases), two key concepts affect performance:
 
-**Shuffling** - Moving data between nodes in a cluster. This happens when you need to reorganize data (e.g., during JOINs or GROUP BY operations). Shuffling is expensive because it involves network I/O and disk writes. Minimizing shuffles is crucial for performance.
+**Shuffling** - Moving data between nodes in a cluster. This happens when you need to reorganize data (e.g., during JOINs or GROUP BY operations). Shuffling is expensive because it involves network I/O and disk writes. Minimizing shuffles is crucial for performance. See [Query Routing Patterns](../../core-concepts/06-architecture-patterns/02-query-routing-patterns.md) for how distributed query engines minimize this cost.
 
 **Batching** - Processing data in groups instead of one record at a time. Instead of performing 1 million individual operations, you send 1 query that processes 1 million rows. This reduces overhead and improves throughput dramatically.
 

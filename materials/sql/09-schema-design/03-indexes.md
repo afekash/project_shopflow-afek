@@ -6,9 +6,11 @@ Indexes speed up data retrieval but slow down writes. Understanding when and how
 
 ## Index Types
 
+> **Core Concept:** See [Trees for Storage](../../core-concepts/02-data-structures/02-trees-for-storage.md) for how B-trees and B+ trees work -- node structure, why they're optimized for disk I/O, and the clustered vs non-clustered distinction. SQL databases use B-trees for indexes because they need sorted access for range scans and ORDER BY.
+
 ### Clustered Index
 
-Physical order of data. **One per table**.
+Physical order of data. **One per table**. In B-tree terms: this is a B+ tree where the leaf nodes *are* the data rows, stored in key order. A lookup by the clustered key is a single tree traversal that lands directly on the row data.
 
 ```sql
 -- Usually on primary key
@@ -17,13 +19,13 @@ ON Products(ProductID);
 ```
 
 **How it works:**
-- Data sorted by index key
-- Fast range scans
-- Slow inserts (must maintain order)
+- Data sorted by index key (B+ tree leaf order = physical storage order)
+- Fast range scans (leaf nodes linked for sequential traversal)
+- Slow inserts (must maintain sort order; may split B-tree pages)
 
 ### Nonclustered Index
 
-Separate structure pointing to data. **Multiple per table**.
+Separate B-tree structure pointing to data. **Multiple per table**. The leaf nodes contain the index key plus a pointer (row ID or the clustered key) to the actual data row.
 
 ```sql
 CREATE NONCLUSTERED INDEX IX_Products_CategoryID
@@ -31,8 +33,9 @@ ON Products(CategoryID);
 ```
 
 **How it works:**
-- Index stores key + pointer (RID or clustered key)
-- Requires lookup to get full row (unless covering)
+- Index B-tree stores key + pointer (RID or clustered key)
+- Lookup: traverse the non-clustered B-tree (O(log n)) → then follow pointer to fetch the full row (an additional random I/O)
+- Can be avoided with a **covering index** (INCLUDE columns) -- the index leaf contains all needed columns, eliminating the row lookup
 
 ## CREATE INDEX
 
@@ -218,18 +221,19 @@ INCLUDE (UnitPrice, UnitsInStock);
 
 ## Big Data Context
 
-**Traditional databases:** B-tree indexes
+> **Core Concept:** See [Partitioning Strategies](../../core-concepts/03-scaling/03-partitioning-strategies.md) for range vs hash partitioning, hot spots, and rebalancing at the distributed level. See [Probabilistic Structures](../../core-concepts/02-data-structures/04-probabilistic-structures.md) for how bloom filters provide fast existence checks without scanning data.
+
+**Traditional databases:** B-tree indexes (random I/O per write, O(log n) per read)
 
 **Data lakes/warehouses:**
-- **No indexes** in Parquet/ORC files
-- Instead: **Partitioning, clustering, sorting**
-- **Zone maps** (min/max statistics per file)
-- **Bloom filters** for existence checks
+- **No B-tree indexes** in Parquet/ORC files -- B-trees require mutable in-place updates, which is incompatible with immutable file formats
+- Instead: **Partitioning** (coarse-grained routing to file subsets), **clustering/sorting** (data order within files), **zone maps** (min/max statistics stored in file metadata -- enables skipping entire files when the predicate is outside the min/max range)
+- **Bloom filters** per column per row group -- existence checks without reading data
 
 **Example:**
 
 ```sql
--- Partitioning = coarse-grained "index"
+-- Partitioning = coarse-grained "index" -- prunes which files to read
 CREATE TABLE sales (
     sale_id BIGINT,
     amount DECIMAL,
@@ -238,15 +242,15 @@ CREATE TABLE sales (
 PARTITIONED BY (year INT, month INT)
 CLUSTERED BY (customer_id) INTO 100 BUCKETS;
 
--- Query prunes partitions (like index)
+-- Query prunes partitions (like index seek, but at file granularity)
 SELECT * FROM sales WHERE year = 2024 AND month = 1;
--- Only reads files in year=2024/month=1 partition
+-- Only reads files in year=2024/month=1 partition -- all other files skipped
 ```
 
 **Columnar benefits:**
-- Reads only needed columns
-- Compression reduces I/O
-- Predicate pushdown skips row groups
+- Reads only needed columns (see [I/O and Storage Fundamentals](../../core-concepts/01-complexity-and-performance/02-io-and-storage-fundamentals.md))
+- Compression reduces I/O (similar values in sequence compress well)
+- Predicate pushdown skips row groups (zone map says min > predicate → skip the whole row group)
 
 ## Index Trade-offs
 

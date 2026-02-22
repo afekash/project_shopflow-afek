@@ -1,0 +1,165 @@
+## Sharded cluster with:
+##   - 1 config server replica set (cfg1, cfg2, cfg3)
+##   - 2 shard replica sets (shard1a/b/c, shard2a/b/c)
+##   - 1 mongos router
+##
+## Port mapping (host):
+##   27017 = mongos  (application entry point)
+##   27100 = cfg1    (config server 1)
+##   27101 = cfg2    (config server 2)
+##   27102 = cfg3    (config server 3)
+##   27110 = shard1a (shard1 primary)
+##   27111 = shard1b (shard1 secondary)
+##   27112 = shard1c (shard1 secondary)
+##   27120 = shard2a (shard2 primary)
+##   27121 = shard2b (shard2 secondary)
+##   27122 = shard2c (shard2 secondary)
+
+services:
+  # ─── Config Server Replica Set ────────────────────────────────────────────
+  cfg1:
+    image: mongo:7
+    container_name: cfg1
+    hostname: cfg1
+    command: mongod --configsvr --replSet configrs --port 27017 --bind_ip_all
+    ports:
+      - "27100:27017"
+    volumes:
+      - cfg1_data:/data/db
+    networks:
+      - mongo-sharding
+
+  cfg2:
+    image: mongo:7
+    container_name: cfg2
+    hostname: cfg2
+    command: mongod --configsvr --replSet configrs --port 27017 --bind_ip_all
+    ports:
+      - "27101:27017"
+    volumes:
+      - cfg2_data:/data/db
+    networks:
+      - mongo-sharding
+
+  cfg3:
+    image: mongo:7
+    container_name: cfg3
+    hostname: cfg3
+    command: mongod --configsvr --replSet configrs --port 27017 --bind_ip_all
+    ports:
+      - "27102:27017"
+    volumes:
+      - cfg3_data:/data/db
+    networks:
+      - mongo-sharding
+
+  # ─── Shard 1 Replica Set ──────────────────────────────────────────────────
+  shard1a:
+    image: mongo:7
+    container_name: shard1a
+    hostname: shard1a
+    command: mongod --shardsvr --replSet shard1rs --port 27017 --bind_ip_all
+    ports:
+      - "27110:27017"
+    volumes:
+      - shard1a_data:/data/db
+    networks:
+      - mongo-sharding
+
+  shard1b:
+    image: mongo:7
+    container_name: shard1b
+    hostname: shard1b
+    command: mongod --shardsvr --replSet shard1rs --port 27017 --bind_ip_all
+    ports:
+      - "27111:27017"
+    volumes:
+      - shard1b_data:/data/db
+    networks:
+      - mongo-sharding
+
+  shard1c:
+    image: mongo:7
+    container_name: shard1c
+    hostname: shard1c
+    command: mongod --shardsvr --replSet shard1rs --port 27017 --bind_ip_all
+    ports:
+      - "27112:27017"
+    volumes:
+      - shard1c_data:/data/db
+    networks:
+      - mongo-sharding
+
+  # ─── Shard 2 Replica Set ──────────────────────────────────────────────────
+  shard2a:
+    image: mongo:7
+    container_name: shard2a
+    hostname: shard2a
+    command: mongod --shardsvr --replSet shard2rs --port 27017 --bind_ip_all
+    ports:
+      - "27120:27017"
+    volumes:
+      - shard2a_data:/data/db
+    networks:
+      - mongo-sharding
+
+  shard2b:
+    image: mongo:7
+    container_name: shard2b
+    hostname: shard2b
+    command: mongod --shardsvr --replSet shard2rs --port 27017 --bind_ip_all
+    ports:
+      - "27121:27017"
+    volumes:
+      - shard2b_data:/data/db
+    networks:
+      - mongo-sharding
+
+  shard2c:
+    image: mongo:7
+    container_name: shard2c
+    hostname: shard2c
+    command: mongod --shardsvr --replSet shard2rs --port 27017 --bind_ip_all
+    ports:
+      - "27122:27017"
+    volumes:
+      - shard2c_data:/data/db
+    networks:
+      - mongo-sharding
+
+  # ─── mongos Router ────────────────────────────────────────────────────────
+  mongos:
+    image: mongo:7
+    container_name: mongos
+    hostname: mongos
+    # mongos reads cluster metadata from the config server replica set
+    command: mongos --configdb configrs/cfg1:27017,cfg2:27017,cfg3:27017 --port 27017 --bind_ip_all
+    ports:
+      - "27017:27017"
+    depends_on:
+      - cfg1
+      - cfg2
+      - cfg3
+      - shard1a
+      - shard1b
+      - shard1c
+      - shard2a
+      - shard2b
+      - shard2c
+    networks:
+      - mongo-sharding
+
+volumes:
+  cfg1_data:
+  cfg2_data:
+  cfg3_data:
+  shard1a_data:
+  shard1b_data:
+  shard1c_data:
+  shard2a_data:
+  shard2b_data:
+  shard2c_data:
+
+networks:
+  mongo-sharding:
+    driver: bridge

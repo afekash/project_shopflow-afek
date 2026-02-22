@@ -154,7 +154,12 @@ CREATE TABLE AggSalesByYear (
 SELECT TotalRevenue FROM AggSalesByYear WHERE Year = 2024;
 ```
 
-**Approximate aggregations** for massive scale (HyperLogLog for COUNT DISTINCT, t-Digest for percentiles).
+**Approximate aggregations** for massive scale:
+
+> **Core Concept:** See [Probabilistic Structures](../../core-concepts/02-data-structures/04-probabilistic-structures.md) for how HyperLogLog achieves ±0.81% error on COUNT DISTINCT using only 12KB of memory regardless of cardinality, and how t-Digest provides accurate percentiles at the tails.
+
+- **HyperLogLog** for `COUNT DISTINCT` -- 12KB of memory regardless of how many distinct values, ±0.81% error. Most distributed SQL engines (`APPROX_COUNT_DISTINCT` in BigQuery, `approx_distinct` in Trino) use HyperLogLog internally.
+- **t-Digest** for percentiles -- < 0.1% relative error at p99/p1, constant memory.
 
 ## Practice Exercises
 

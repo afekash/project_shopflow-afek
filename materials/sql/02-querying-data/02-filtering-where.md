@@ -316,7 +316,9 @@ WHERE year = 2024;
 
 ### Approximate Filters (Bloom Filters)
 
-In big data, checking if a value exists can be expensive. **Bloom filters** provide fast, probabilistic membership tests:
+> **Core Concept:** See [Probabilistic Structures](../../core-concepts/02-data-structures/04-probabilistic-structures.md) for how bloom filters work -- the bit array, hash functions, no false negatives, bounded false positive rate.
+
+In big data, checking if a value exists can be expensive. **Bloom filters** provide fast, probabilistic membership tests. The key property: a bloom filter can tell you with certainty that a value is *not* in the set (no false negatives), but only probabilistically that it *is* (small false positive rate). This makes them ideal as a pre-filter -- use the bloom filter to skip rows that definitely won't match, then apply the exact filter only to the survivors.
 
 ```sql
 -- Traditional (slow on huge tables):
@@ -325,7 +327,8 @@ WHERE customer_id IN (SELECT id FROM customers WHERE country = 'USA');
 -- With bloom filter (fast):
 -- 1. Build bloom filter from USA customers (small)
 -- 2. Broadcast to all nodes
--- 3. Filter rows locally before shuffle
+-- 3. Filter rows locally before shuffle (bloom filter eliminates definite non-matches)
+-- 4. Exact filter applied to remaining candidates
 -- Result: 95%+ reduction in shuffle data
 ```
 

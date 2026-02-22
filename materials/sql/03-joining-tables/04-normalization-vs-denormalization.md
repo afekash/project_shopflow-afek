@@ -6,19 +6,21 @@ One of the most important concepts in data engineering is understanding **when t
 
 ## What is Normalization?
 
+> **Core Concept:** See [Schema Strategies](../../core-concepts/06-architecture-patterns/01-schema-strategies.md) for the general theory of schema-on-write vs schema-on-read and the normalization vs denormalization trade-off -- tool-agnostic. This lesson focuses on how these principles apply specifically to relational databases and the OLTP vs OLAP spectrum.
+
 **Normalization** is the process of organizing data to:
 1. **Minimize redundancy** - Store each fact once
 2. **Ensure data integrity** - Prevent update anomalies
 3. **Enforce constraints** - Use foreign keys
 
-**Normal forms:**
+**Normal forms** -- progressively stronger constraints on data structure:
 - **1NF** - Atomic values, no repeating groups
 - **2NF** - No partial dependencies on composite keys
-- **3NF** - No transitive dependencies
+- **3NF** - No transitive dependencies (each non-key column depends only on the primary key)
 - **BCNF** - Stronger version of 3NF
 - **4NF, 5NF** - Deal with multi-valued dependencies (rare in practice)
 
-Most OLTP systems target **3NF** or **BCNF**.
+Most OLTP systems target **3NF** or **BCNF**. In relational databases, normalization is enforced through foreign keys and constraints at the database level -- this is schema-on-write applied to relationships as well as column types.
 
 ## Northwind: A Normalized (3NF) Example
 

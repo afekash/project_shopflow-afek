@@ -6,6 +6,13 @@ Transactions group multiple SQL statements into a single unit of work. Either al
 
 ## ACID Properties
 
+> **Core Concept:** See [ACID vs BASE](../../core-concepts/04-distributed-systems/02-acid-vs-base.md) for the full theory -- ACID vs BASE as opposing philosophies, pessimistic vs optimistic concurrency, and when each model fits.
+
+SQL databases enforce ACID through a combination of:
+- **Locking** (for isolation): reads and writes acquire locks to prevent concurrent interference
+- **Write-ahead logging** (for durability and atomicity): every change is appended to the WAL before being applied, enabling crash recovery and rollback -- see [Write-Ahead Logs](../../core-concepts/05-replication-and-availability/03-write-ahead-logs.md)
+
+The four properties:
 - **Atomicity** - All or nothing
 - **Consistency** - Database remains valid
 - **Isolation** - Concurrent transactions don't interfere
@@ -90,6 +97,10 @@ COMMIT;  -- Commits Category 1 and 2
 ```
 
 ## Isolation Levels
+
+> **Core Concept:** See [Consistency Models](../../core-concepts/04-distributed-systems/03-consistency-models.md) for the general consistency spectrum -- from linearizable (strongest) to eventual (weakest). Isolation levels are SQL's implementation of this spectrum for concurrent transactions within a single database.
+
+Isolation levels are the SQL implementation of the general consistency spectrum. READ UNCOMMITTED offers the weakest guarantees (highest performance), SERIALIZABLE offers the strongest (lowest concurrency). The default (READ COMMITTED in most databases) is a pragmatic middle ground that eliminates the most harmful anomalies while maintaining reasonable concurrency.
 
 Controls how transactions see changes from other transactions.
 
@@ -248,9 +259,10 @@ Data lakes (S3, ADLS): **No transactions** by default
 - No rollback capability
 - Concurrent writes can overwrite
 
-**Delta Lake / Apache Iceberg** add ACID transactions:
+**Delta Lake / Apache Iceberg** add ACID transactions by implementing their own transaction logs -- the same write-ahead log concept applied to file-based storage. Before any write, a log entry is appended to the transaction log. On crash, the log is replayed. See [Write-Ahead Logs](../../core-concepts/05-replication-and-availability/03-write-ahead-logs.md) for the general principle.
+
 ```sql
--- Delta Lake example
+-- Delta Lake example (same SQL, ACID guaranteed by the transaction log)
 BEGIN TRANSACTION;
     DELETE FROM events WHERE date < '2020-01-01';
     INSERT INTO events SELECT * FROM new_events;

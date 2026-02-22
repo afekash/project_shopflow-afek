@@ -269,8 +269,11 @@ SELECT TOP 100 * FROM huge_table TABLESAMPLE (1 PERCENT) ORDER BY value DESC;
 ```
 
 In data lakes, use **approximate algorithms**:
-- Top-K heavy hitters (Count-Min Sketch)
-- Percentiles (t-Digest)
+
+> **Core Concept:** See [Probabilistic Structures](../../core-concepts/02-data-structures/04-probabilistic-structures.md) for how Count-Min Sketch (frequency estimation), t-Digest (percentiles), and HyperLogLog (distinct count) work and their memory/accuracy trade-offs.
+
+- Top-K heavy hitters (Count-Min Sketch) -- approximate frequency counts in O(width × depth) memory
+- Percentiles (t-Digest) -- approximate p99/p95 with < 0.1% error at tails, constant memory
 - Sampling-based approaches
 
 ### Presorted Data and Partitioning

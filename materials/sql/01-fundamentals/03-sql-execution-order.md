@@ -187,7 +187,9 @@ SET SHOWPLAN_TEXT OFF;
 
 ## Big Data Context: Execution in Distributed Systems
 
-In distributed SQL engines (Spark SQL, Presto, BigQuery), execution order becomes even more complex:
+> **Core Concept:** See [Query Routing Patterns](../../core-concepts/06-architecture-patterns/02-query-routing-patterns.md) for how distributed query engines route queries -- targeted vs scatter-gather, broadcast joins, and the coordinator role. See [Partitioning Strategies](../../core-concepts/03-scaling/03-partitioning-strategies.md) for how partitioning affects which stages need shuffles and which can use partition pruning.
+
+In distributed SQL engines (Spark SQL, Presto, BigQuery), execution order becomes even more complex. The SQL logical execution order stays the same (FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY), but the physical execution is distributed across nodes. The optimizer must decide at each step: can this be done locally on each node, or does data need to move between nodes (a shuffle)?
 
 ### Stages and Shuffles
 

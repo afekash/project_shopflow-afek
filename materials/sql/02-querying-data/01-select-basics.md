@@ -140,6 +140,8 @@ SELECT ProductID, ProductName, UnitPrice FROM Products;
 
 ### Column-Oriented Storage and SELECT *
 
+> **Core Concept:** See [I/O and Storage Fundamentals](../../core-concepts/01-complexity-and-performance/02-io-and-storage-fundamentals.md) for how row-oriented vs column-oriented storage works at the I/O level and why column selection matters for read performance.
+
 In **columnar databases** (Parquet, ORC, columnar indexes), the cost of `SELECT *` is extreme:
 
 ```sql
@@ -155,6 +157,8 @@ In **columnar databases** (Parquet, ORC, columnar indexes), the cost of `SELECT 
 **Example:** In a table with 100 columns:
 - `SELECT col1, col2` - Reads 2 column files
 - `SELECT *` - Reads 100 column files (50x more I/O!)
+
+Columnar storage is why `SELECT *` is expensive in data lakes -- it reads every column file. This is the I/O trade-off from core-concepts applied to query design: SQL's declarative model means you *can* ask for all columns, but the physical cost of doing so in column-oriented storage is 50x higher than being explicit.
 
 This is why data warehouse best practices emphasize explicit column selection.
 

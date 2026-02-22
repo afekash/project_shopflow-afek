@@ -12,6 +12,27 @@ This course uses the **Northwind** database (a classic OLTP system) to teach SQL
 - Docker installed (for running MS SQL Server)
 - A SQL client (Azure Data Studio, DBeaver, or VS Code with SQL extension)
 
+## Core Concepts Reference
+
+This course links to the **[Core Concepts library](../core-concepts/README.md)** -- a tool-agnostic reference for the foundational building blocks that appear across all data technologies. Think of it as a companion dictionary: when this course references B-trees, bloom filters, or ACID, follow the link to understand the general concept, then return here to see how SQL databases specifically implement it.
+
+Key concepts you'll encounter in this course:
+
+| When you see... | The core concept is... |
+|-----------------|----------------------|
+| Big O notation, O(log n) index seeks | [Big O Notation](../core-concepts/01-complexity-and-performance/01-big-o-notation.md) |
+| Columnar storage, SELECT * cost | [I/O and Storage Fundamentals](../core-concepts/01-complexity-and-performance/02-io-and-storage-fundamentals.md) |
+| Clustered/nonclustered indexes, B-trees | [Trees for Storage](../core-concepts/02-data-structures/02-trees-for-storage.md) |
+| Bloom filters (WHERE, joins) | [Probabilistic Structures](../core-concepts/02-data-structures/04-probabilistic-structures.md) |
+| Table partitioning, zone maps | [Partitioning Strategies](../core-concepts/03-scaling/03-partitioning-strategies.md) |
+| ACID properties, transactions | [ACID vs BASE](../core-concepts/04-distributed-systems/02-acid-vs-base.md) |
+| Isolation levels | [Consistency Models](../core-concepts/04-distributed-systems/03-consistency-models.md) |
+| WAL, Delta Lake / Iceberg transactions | [Write-Ahead Logs](../core-concepts/05-replication-and-availability/03-write-ahead-logs.md) |
+| Normalization vs denormalization | [Schema Strategies](../core-concepts/06-architecture-patterns/01-schema-strategies.md) |
+| Distributed joins, shuffles | [Query Routing Patterns](../core-concepts/06-architecture-patterns/02-query-routing-patterns.md) |
+
+**Note:** SQL is taught before NoSQL in this course. The core-concepts library contains no NoSQL-specific content, only general theory. NoSQL materials will later build on these same concepts and show you how different databases made different choices from the same toolkit.
+
 ## Learning Path
 
 | Module | Topics | Key Concepts |
