@@ -5,7 +5,7 @@
 All infrastructure is in `demo-app/replica-set/`. Start the cluster:
 
 ```bash
-cd demo-app/replica-set
+cd materials/nosql/demo-app/replica-set
 docker compose up -d
 bash init-replica.sh
 ```
@@ -26,7 +26,7 @@ Connect to the primary and examine the replica set:
 
 ```javascript
 // Connect to primary
-mongosh "mongodb://localhost:27017"
+mongosh "mongodb://localhost:27018"
 
 // View the replica set configuration
 rs.conf()

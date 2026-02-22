@@ -17,27 +17,27 @@ A MongoDB sharded cluster has three distinct components:
 
 ```mermaid
 graph TD
-    App["Application"] -->|"Connect to mongos\n(not to shards directly)"| Mongos
+    App["Application"] -->|"Connect to mongos (not to shards directly)"| Mongos
 
     subgraph router [Query Router]
-        Mongos["mongos\n(stateless router)\nCan run multiple instances"]
+        Mongos["mongos (stateless router) Can run multiple instances"]
     end
 
-    Mongos -->|"Read chunk map\n(which chunks on which shards)"| ConfigRS
+    Mongos -->|"Read chunk map (which chunks on which shards)"| ConfigRS
 
     subgraph config [Config Servers - Replica Set]
-        ConfigRS["configsvr replica set\ncfg1, cfg2, cfg3\nStores cluster metadata:\n- chunk ranges\n- shard membership\n- database assignments"]
+        ConfigRS["configsvr replica set cfg1, cfg2, cfg3 Stores cluster metadata: - chunk ranges - shard membership - database assignments"]
     end
 
-    Mongos -->|"Route query to\ncorrect shard(s)"| Shard1
-    Mongos -->|"Route query to\ncorrect shard(s)"| Shard2
+    Mongos -->|"Route query to correct shard(s)"| Shard1
+    Mongos -->|"Route query to correct shard(s)"| Shard2
 
     subgraph shard1 [Shard 1 - Replica Set]
-        Shard1["shard1 RS\nshard1a (primary)\nshard1b (secondary)\nshard1c (secondary)\n\nChunks: user_id 0–3333"]
+        Shard1["shard1 RS shard1a (primary) shard1b (secondary) shard1c (secondary)  Chunks: user_id 0–3333"]
     end
 
     subgraph shard2 [Shard 2 - Replica Set]
-        Shard2["shard2 RS\nshard2a (primary)\nshard2b (secondary)\nshard2c (secondary)\n\nChunks: user_id 3334–9999"]
+        Shard2["shard2 RS shard2a (primary) shard2b (secondary) shard2c (secondary)  Chunks: user_id 3334–9999"]
     end
 ```
 
@@ -122,7 +122,7 @@ MongoDB applies a hash function to the shard key value before assigning to a chu
 
 ```mermaid
 graph LR
-    Data["Documents"] --> Hash["Hash function\nhash(user_id)"]
+    Data["Documents"] --> Hash["Hash function hash(user_id)"]
     Hash -->|"hash in range 0–5461"| S1["Shard 1"]
     Hash -->|"hash in range 5462–10922"| S2["Shard 2"]
     Hash -->|"hash in range 10923–16383"| S3["Shard 3"]
@@ -166,8 +166,8 @@ The query includes the shard key. `mongos` knows exactly which shard(s) to conta
 ```mermaid
 graph LR
     App["App: find(user_id: 42)"] --> Mongos
-    Mongos -->|"Check chunk map:\nuser_id 42 → Shard 1"| S1["Shard 1\nRETURNS result"]
-    Mongos -->|"No query"| S2["Shard 2\n(not contacted)"]
+    Mongos -->|"Check chunk map: user_id 42 → Shard 1"| S1["Shard 1 RETURNS result"]
+    Mongos -->|"No query"| S2["Shard 2 (not contacted)"]
     S1 --> Mongos
     Mongos --> App
 ```
@@ -185,8 +185,8 @@ The query does NOT include the shard key. `mongos` must send the query to ALL sh
 ```mermaid
 graph LR
     App["App: find(status: 'active')"] --> Mongos
-    Mongos -->|"No shard key → query all"| S1["Shard 1\nScans its chunk"]
-    Mongos -->|"No shard key → query all"| S2["Shard 2\nScans its chunk"]
+    Mongos -->|"No shard key → query all"| S1["Shard 1 Scans its chunk"]
+    Mongos -->|"No shard key → query all"| S2["Shard 2 Scans its chunk"]
     S1 -->|"partial results"| Mongos
     S2 -->|"partial results"| Mongos
     Mongos -->|"Merge, sort, return"| App
@@ -207,15 +207,15 @@ The **balancer** is a background process running on the config server primary. I
 
 ```mermaid
 graph TD
-    Balancer["Balancer\n(runs on config server)"] -->|"Detects imbalance:\nShard1 has 120 chunks\nShard2 has 80 chunks"| Decision["Decide to move chunks"]
-    Decision -->|"Move chunk [5000, 5128]\nfrom Shard1 to Shard2"| Migration["Chunk Migration"]
+    Balancer["Balancer (runs on config server)"] -->|"Detects imbalance: Shard1 has 120 chunks Shard2 has 80 chunks"| Decision["Decide to move chunks"]
+    Decision -->|"Move chunk [5000, 5128] from Shard1 to Shard2"| Migration["Chunk Migration"]
     
     subgraph migration [Chunk Migration Process]
         M1["1. Shard1 reads chunk data"] --> M2["2. Shard1 sends to Shard2"]
         M2 --> M3["3. Shard2 applies changes"]
-        M3 --> M4["4. Both shards sync any new writes\nthat arrived during migration"]
-        M4 --> M5["5. Config server updates chunk map\natomically"]
-        M5 --> M6["6. Shard1 deletes its copy\n(async cleanup)"]
+        M3 --> M4["4. Both shards sync any new writes that arrived during migration"]
+        M4 --> M5["5. Config server updates chunk map atomically"]
+        M5 --> M6["6. Shard1 deletes its copy (async cleanup)"]
     end
 ```
 

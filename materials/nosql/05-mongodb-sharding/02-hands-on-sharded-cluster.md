@@ -5,7 +5,7 @@
 All infrastructure is in `demo-app/sharded-cluster/`. This cluster takes about 2 minutes to initialize.
 
 ```bash
-cd demo-app/sharded-cluster
+cd materials/nosql/demo-app/sharded-cluster
 docker compose up -d
 bash init-sharding.sh
 ```
@@ -46,6 +46,7 @@ shards:
 ```
 
 **Databases section** -- shows which databases have sharding enabled:
+
 ```
 databases:
   {  _id: 'demo',  primary: 'shard1rs',  partitioned: true }
@@ -124,7 +125,7 @@ Read the explain output carefully:
 }
 ```
 
-**`SINGLE_SHARD`**: `mongos` used the hashed shard key to determine that `user_0001`'s data lives on `shard1rs` and routed the query there exclusively. `shard2rs` was never contacted.
+`**SINGLE_SHARD**`: `mongos` used the hashed shard key to determine that `user_0001`'s data lives on `shard1rs` and routed the query there exclusively. `shard2rs` was never contacted.
 
 Try different users and observe they route to different shards:
 ```javascript
@@ -167,14 +168,16 @@ Output:
 }
 ```
 
-**`SHARD_MERGE`**: `mongos` had to ask both shards, each performed a collection scan, and `mongos` merged the results. The query touched 50,000 documents to return ~12,500 -- a full scatter-gather.
+`**SHARD_MERGE**`: `mongos` had to ask both shards, each performed a collection scan, and `mongos` merged the results. The query touched 50,000 documents to return ~12,500 -- a full scatter-gather.
 
 **Performance comparison**:
 
-| Query | Stage | Shards Contacted | Docs Examined | Time |
-|-------|-------|-----------------|---------------|------|
-| `{ user_id: "user_0001" }` | SINGLE_SHARD | 1 | 50 | ~3ms |
-| `{ event_type: "purchase" }` | SHARD_MERGE | 2 | 50,000 | ~45ms |
+
+| Query                        | Stage        | Shards Contacted | Docs Examined | Time  |
+| ---------------------------- | ------------ | ---------------- | ------------- | ----- |
+| `{ user_id: "user_0001" }`   | SINGLE_SHARD | 1                | 50            | ~3ms  |
+| `{ event_type: "purchase" }` | SHARD_MERGE  | 2                | 50,000        | ~45ms |
+
 
 This is why shard key selection matters: your most frequent queries should include the shard key.
 
@@ -191,6 +194,7 @@ db.events_hashed.find({ event_type: "purchase" }).explain("executionStats")
 ```
 
 Updated output:
+
 ```javascript
 {
   "winningPlan": {
@@ -262,6 +266,7 @@ python sharding_demo.py
 ```
 
 The script demonstrates:
+
 1. Connecting through mongos (transparent to the application)
 2. Inserting data (mongos routes to correct shard)
 3. Reading data with and without shard key (mongos handles routing)
@@ -308,6 +313,7 @@ docker logs mongos -f --tail=0
 ```
 
 In another terminal, run queries:
+
 ```javascript
 mongosh "mongodb://localhost:27017"
 use demo
@@ -326,6 +332,7 @@ sh.status()
 ```
 
 Look for the `chunks:` section under each sharded collection. With 50K documents at ~573 bytes average:
+
 - Total data: ~28MB per collection
 - Default chunk size: 128MB
 - Expected: 1 chunk per shard initially (data too small to trigger splits)

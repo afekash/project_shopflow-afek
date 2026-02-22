@@ -20,14 +20,16 @@ A MongoDB **replica set** is a group of MongoDB nodes that maintain the same dat
 ```mermaid
 graph TD
     App["Application"] -->|"All writes"| Primary
-    App -->|"Optional reads\n(read preference)"| Secondary1
-    App -->|"Optional reads\n(read preference)"| Secondary2
+    App -->|"Optional reads (read preference)"| Secondary1
+    App -->|"Optional reads (read preference)"| Secondary2
     
     subgraph rs [Replica Set: rs0]
-        Primary["Primary\nmongo1:27017\n\nReceives all writes\nReplicated to secondaries"] -->|"oplog replication"| Secondary1["Secondary\nmongo2:27017\n\nApplies oplog entries\nCan serve reads"]
-        Primary -->|"oplog replication"| Secondary2["Secondary\nmongo3:27017\n\nApplies oplog entries\nCan serve reads"]
+        Primary["Primary (mongo1:27017) Receives all writes Replicated to secondaries"] -->|"oplog replication"| Secondary1["Secondary (mongo2:27017) Applies oplog entries Can serve reads"]
+        Primary -->|"oplog replication"| Secondary2["Secondary (mongo3:27017) Applies oplog entries Can serve reads"]
     end
 ```
+
+
 
 **Primary**: The single node that accepts all write operations. Every replica set has exactly one primary at any time.
 
@@ -36,6 +38,7 @@ graph TD
 **Arbiter** (optional): A lightweight node that participates in elections but holds no data. Used in 2-node replica sets to provide a tiebreaker for elections without the storage cost of a full replica.
 
 > **Typical configurations:**
+>
 > - **3 data nodes**: Most common. Tolerates loss of 1 node.
 > - **5 data nodes**: Tolerates loss of 2 nodes. Used for higher durability.
 > - **2 data nodes + 1 arbiter**: Resource-efficient but the arbiter doesn't help with durability.
@@ -89,21 +92,24 @@ When the primary becomes unavailable, the replica set automatically elects a new
 
 ```mermaid
 graph TD
-    A["Primary stops responding\n(crashed, network partition, etc.)"] --> B["Secondaries detect via heartbeat\n(every 2 seconds)"]
-    B --> C["After 10 seconds (default electionTimeoutMillis)\nA secondary calls for an election"]
-    C --> D["Candidates campaign:\neach requests votes from other members"]
-    D --> E["Member votes if candidate's oplog\nis at least as up-to-date as its own"]
-    E --> F{"Majority of\nvotes obtained?"}
-    F -->|"Yes (majority of all members)"| G["Candidate becomes new Primary\nBegins accepting writes"]
-    F -->|"No (tie or split)"| H["New election round\n(random backoff to avoid ties)"]
+    A["Primary stops responding (crashed, network partition, etc.)"] --> B["Secondaries detect via heartbeat (every 2 seconds)"]
+    B --> C["After 10 seconds (default electionTimeoutMillis) A secondary calls for an election"]
+    C --> D["Candidates campaign: each requests votes from other members"]
+    D --> E["Member votes if candidate's oplog is at least as up-to-date as its own"]
+    E --> F{"Majority of votes obtained?"}
+    F -->|"Yes (majority of all members)"| G["Candidate becomes new Primary Begins accepting writes"]
+    F -->|"No (tie or split)"| H["New election round (random backoff to avoid ties)"]
 ```
 
+
+
 **Key requirements for election:**
+
 - A candidate needs **votes from a majority of all members** (not just online members). In a 3-node set, majority = 2. In a 5-node set, majority = 3.
 - This is why an even number of nodes without an arbiter is problematic: a 2-node set can never elect a new primary if one node goes down (1 vote out of 2 needed = not a majority).
 - A candidate's oplog must be at least as recent as the voter's oplog (prevents electing a lagging secondary that would lose data).
 
-**Typical failover time**: 10-30 seconds (election timeout + vote collection + new primary announcement).
+**Typical failover time**: 12 seconds (election timeout + vote collection + new primary announcement).
 
 **What the application sees during failover**: Write operations fail with a `NotPrimaryError`. The driver (pymongo) automatically retries once the new primary is elected. Applications should handle brief connection errors gracefully.
 
@@ -114,20 +120,24 @@ graph TD
 ```mermaid
 graph LR
     App["App: insertOne()"] --> Primary
-    Primary -->|"acknowledge immediately"| W1["w:1\nFastest, less durable"]
-    Primary -->|"wait for majority\nto confirm"| WMaj["w:majority\nSlower, more durable"]
+    Primary -->|"acknowledge immediately"| W1["w:1 Fastest, less durable"]
+    Primary -->|"wait for majority to confirm"| WMaj["w:majority Slower, more durable"]
     Primary --> S1["Secondary 1"]
     Primary --> S2["Secondary 2"]
     S1 -->|"confirms"| WMaj
     S2 -->|"confirms"| WMaj
 ```
 
-| Write Concern | Meaning | Durability | Latency |
-|--------------|---------|------------|---------|
-| `w: 0` | Fire and forget (unacknowledged) | Very low | ~0ms |
-| `w: 1` | Primary acknowledged | Moderate | ~1ms |
-| `w: majority` | Majority of nodes acknowledged | High | ~5-20ms |
-| `w: 3` | All 3 nodes acknowledged | Very high | Slowest |
+
+
+
+| Write Concern | Meaning                          | Durability | Latency |
+| ------------- | -------------------------------- | ---------- | ------- |
+| `w: 0`        | Fire and forget (unacknowledged) | Very low   | ~0ms    |
+| `w: 1`        | Primary acknowledged             | Moderate   | ~1ms    |
+| `w: majority` | Majority of nodes acknowledged   | High       | ~5-20ms |
+| `w: 3`        | All 3 nodes acknowledged         | Very high  | Slowest |
+
 
 ```javascript
 // mongosh examples
@@ -144,6 +154,7 @@ db.payments.insertOne(
 ```
 
 **Choosing write concern:**
+
 - Financial transactions, user accounts: `w: majority` (losing a confirmed write is unacceptable)
 - High-volume event logs, metrics: `w: 1` (losing a few events is acceptable, throughput matters)
 - Cache warming, temp data: `w: 0` (don't care if it's lost)
@@ -154,21 +165,25 @@ db.payments.insertOne(
 
 ```mermaid
 graph TD
-    App["Application read\nread preference = ?"] --> RP{Read preference}
-    RP -->|"primary (default)"| Primary["Primary only\nAlways fresh data"]
-    RP -->|"primaryPreferred"| PrefPrimary["Primary if available\nFallback to secondary"]
-    RP -->|"secondary"| Secondary["Any secondary\nMay be slightly stale"]
-    RP -->|"secondaryPreferred"| PrefSecondary["Secondary if available\nFallback to primary"]
-    RP -->|"nearest"| Nearest["Lowest network latency\nRegardless of type"]
+    App["Application read read preference = ?"] --> RP{Read preference}
+    RP -->|"primary (default)"| Primary["Primary only Always fresh data"]
+    RP -->|"primaryPreferred"| PrefPrimary["Primary if available Fallback to secondary"]
+    RP -->|"secondary"| Secondary["Any secondary May be slightly stale"]
+    RP -->|"secondaryPreferred"| PrefSecondary["Secondary if available Fallback to primary"]
+    RP -->|"nearest"| Nearest["Lowest network latency Regardless of type"]
 ```
 
-| Read Preference | Use Case |
-|----------------|---------|
-| `primary` (default) | Any read that requires up-to-date data |
-| `primaryPreferred` | Prefer fresh data, fall back to secondary if primary is unavailable |
-| `secondary` | Analytics, reporting -- stale data acceptable, offload primary |
-| `secondaryPreferred` | Primarily secondary reads, fall back to primary |
-| `nearest` | Multi-region deployments -- users read from geographically closest node |
+
+
+
+| Read Preference      | Use Case                                                                |
+| -------------------- | ----------------------------------------------------------------------- |
+| `primary` (default)  | Any read that requires up-to-date data                                  |
+| `primaryPreferred`   | Prefer fresh data, fall back to secondary if primary is unavailable     |
+| `secondary`          | Analytics, reporting -- stale data acceptable, offload primary          |
+| `secondaryPreferred` | Primarily secondary reads, fall back to primary                         |
+| `nearest`            | Multi-region deployments -- users read from geographically closest node |
+
 
 **Important**: Reads from secondaries may be **stale** (lag behind the primary). If your application writes a record and immediately reads it back, reading from a secondary might not see the new write. Use `primary` or `primaryPreferred` for read-your-writes consistency.
 
@@ -183,11 +198,13 @@ db.products.find({ category: "electronics" })
 
 **Read concern** controls the consistency level of data returned by read operations.
 
-| Read Concern | Returns | Use Case |
-|-------------|---------|---------|
-| `local` (default) | Data from the local node, may not be majority-committed | Fast, most common |
-| `majority` | Data confirmed by majority of nodes | Prevents reading rolled-back data |
-| `linearizable` | Data guaranteed to reflect all successful majority-committed writes before the read | Strongest, slowest |
+
+| Read Concern      | Returns                                                                             | Use Case                          |
+| ----------------- | ----------------------------------------------------------------------------------- | --------------------------------- |
+| `local` (default) | Data from the local node, may not be majority-committed                             | Fast, most common                 |
+| `majority`        | Data confirmed by majority of nodes                                                 | Prevents reading rolled-back data |
+| `linearizable`    | Data guaranteed to reflect all successful majority-committed writes before the read | Strongest, slowest                |
+
 
 ```javascript
 // Read only data confirmed by majority (won't read rolled-back writes)
@@ -215,14 +232,16 @@ The hands-on exercise will make these concepts concrete by letting you observe r
 graph TD
     subgraph overview [Replica Set Summary]
         W["Write → Primary only"] 
-        R["Read → Primary (default)\nor Secondary (configured)"]
-        Repl["Oplog → Primary to Secondaries\n(asynchronous)"]
-        WC["Write Concern → controls durability\nw:1 | w:majority | w:all"]
-        RP["Read Preference → controls which node\nprimary | secondary | nearest"]
-        RC["Read Concern → controls staleness\nlocal | majority | linearizable"]
-        Elect["Election → automatic failover\n~10-30 seconds"]
+        R["Read → Primary (default) or Secondary (configured)"]
+        Repl["Oplog → Primary to Secondaries (asynchronous)"]
+        WC["Write Concern → controls durability w:1 | w:majority | w:all"]
+        RP["Read Preference → controls which node primary | secondary | nearest"]
+        RC["Read Concern → controls staleness local | majority | linearizable"]
+        Elect["Election → automatic failover ~10-30 seconds"]
     end
 ```
+
+
 
 - **Primary** receives all writes; **secondaries** replicate via the oplog
 - **Elections** happen automatically when the primary is unavailable; require majority votes
