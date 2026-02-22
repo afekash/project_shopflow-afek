@@ -22,10 +22,24 @@ docker compose ps
 # 10 containers: cfg1/2/3, shard1a/b/c, shard2a/b/c, mongos
 ```
 
-Connect to the cluster via `mongos` -- this is the single entry point for all operations:
+Connect to the cluster via `mongos` -- this is the single entry point for all operations.
+
+For admin/cluster commands use mongosh:
 
 ```javascript
 mongosh "mongodb://localhost:27017"
+```
+
+For all data operations use Python. Run this setup cell once before starting the exercises:
+
+```python
+from pymongo import MongoClient
+import datetime
+import pprint
+
+# Connect through mongos — shards are completely transparent
+client = MongoClient("mongodb://localhost:27017")
+db = client["demo"]
 ```
 
 ## Exercise 1: Explore the Cluster with sh.status()
@@ -91,84 +105,72 @@ Totals
 
 A query that includes the shard key lets `mongos` route to exactly the right shard.
 
-```javascript
-// Query with shard key: mongos knows which shard owns user_0001
-db.events_hashed.find({ user_id: "user_0001" }).explain("executionStats")
+```python
+# Query with shard key: mongos knows which shard owns user_0001
+plan = db.events_hashed.find({"user_id": "user_0001"}).explain("executionStats")
+
+winning = plan["queryPlanner"]["winningPlan"]
+stats   = plan["executionStats"]
+
+print("Stage:         ", winning["stage"])                  # SINGLE_SHARD
+print("Shard routed:  ", winning["shards"][0]["shardName"]) # shard1rs (or shard2rs)
+print("Docs examined: ", stats["totalDocsExamined"])        # 50
+print("Docs returned: ", stats["nReturned"])                # 50
+print("Time (ms):     ", stats["executionTimeMillis"])      # ~3 ms
 ```
 
-Read the explain output carefully:
-
-```javascript
-{
-  "queryPlanner": {
-    "mongosPlannerVersion": 1,
-    "winningPlan": {
-      "stage": "SINGLE_SHARD",       // ← Only ONE shard was contacted
-      "shards": [
-        {
-          "shardName": "shard1rs",   // ← Routed to shard1 specifically
-          "connectionString": "shard1rs/shard1a:27017,...",
-          "winningPlan": {
-            "stage": "FETCH",
-            "inputStage": { "stage": "IXSCAN", "indexName": "user_id_hashed" }
-          }
-        }
-      ]
-    }
-  },
-  "executionStats": {
-    "nReturned": 50,                 // 50 events for user_0001
-    "totalKeysExamined": 50,
-    "totalDocsExamined": 50,
-    "executionTimeMillis": 3         // Fast: only 1 shard queried
-  }
-}
+Expected explain output (annotated):
+```
+Stage:          SINGLE_SHARD        ← Only ONE shard was contacted
+Shard routed:   shard1rs            ← Routed to shard1 specifically
+Docs examined:  50
+Docs returned:  50
+Time (ms):      3                   ← Fast: only 1 shard queried
 ```
 
-`**SINGLE_SHARD**`: `mongos` used the hashed shard key to determine that `user_0001`'s data lives on `shard1rs` and routed the query there exclusively. `shard2rs` was never contacted.
+**`SINGLE_SHARD`**: `mongos` used the hashed shard key to determine that `user_0001`'s data lives on `shard1rs` and routed the query there exclusively. `shard2rs` was never contacted.
 
-Try different users and observe they route to different shards:
-```javascript
-db.events_hashed.find({ user_id: "user_0500" }).explain("executionStats")
-// Check winningPlan.shards[0].shardName -- might route to shard2rs
+Try different users and observe they may route to different shards:
+
+```python
+for uid in ["user_0001", "user_0500", "user_0999"]:
+    plan = db.events_hashed.find({"user_id": uid}).explain("executionStats")
+    shard = plan["queryPlanner"]["winningPlan"]["shards"][0]["shardName"]
+    print(f"{uid}  →  {shard}")
 ```
 
 ## Exercise 3: No Shard Key → Scatter-Gather
 
 Now query without the shard key -- `mongos` has no choice but to ask every shard.
 
-```javascript
-// Query WITHOUT shard key: mongos must ask all shards
-db.events_hashed.find({ event_type: "purchase" }).explain("executionStats")
+```python
+# Query WITHOUT shard key: mongos must contact all shards
+plan = db.events_hashed.find({"event_type": "purchase"}).explain("executionStats")
+
+winning = plan["queryPlanner"]["winningPlan"]
+stats   = plan["executionStats"]
+
+print("Stage:          ", winning["stage"])       # SHARD_MERGE
+shards_hit = [s["shardName"] for s in winning["shards"]]
+print("Shards queried: ", shards_hit)             # ['shard1rs', 'shard2rs']
+shard_stages = [s["winningPlan"]["stage"] for s in winning["shards"]]
+print("Per-shard stage:", shard_stages)           # ['COLLSCAN', 'COLLSCAN']
+print("Docs examined:  ", stats["totalDocsExamined"])  # 50,000
+print("Docs returned:  ", stats["nReturned"])          # ~12,500
+print("Time (ms):      ", stats["executionTimeMillis"]) # ~45 ms
 ```
 
-Output:
-```javascript
-{
-  "queryPlanner": {
-    "winningPlan": {
-      "stage": "SHARD_MERGE",        // ← Multiple shards contacted, results merged
-      "shards": [
-        {
-          "shardName": "shard1rs",   // ← Shard 1 queried
-          "winningPlan": { "stage": "COLLSCAN" }  // full scan on this shard
-        },
-        {
-          "shardName": "shard2rs",   // ← Shard 2 ALSO queried
-          "winningPlan": { "stage": "COLLSCAN" }  // full scan on this shard too
-        }
-      ]
-    }
-  },
-  "executionStats": {
-    "nReturned": 12502,
-    "totalDocsExamined": 50000,      // ← Examined ALL 50K documents across both shards
-    "executionTimeMillis": 45        // Slower: both shards scanned, results merged
-  }
-}
+Expected output:
+```
+Stage:           SHARD_MERGE          ← Multiple shards contacted, results merged
+Shards queried:  ['shard1rs', 'shard2rs']
+Per-shard stage: ['COLLSCAN', 'COLLSCAN']  ← full scan on each shard
+Docs examined:   50000                ← ALL 50K documents across both shards
+Docs returned:   12502
+Time (ms):       45                   ← Slower: both shards scanned, results merged
 ```
 
-`**SHARD_MERGE**`: `mongos` had to ask both shards, each performed a collection scan, and `mongos` merged the results. The query touched 50,000 documents to return ~12,500 -- a full scatter-gather.
+**`SHARD_MERGE`**: `mongos` had to ask both shards, each performed a collection scan, and `mongos` merged the results. The query touched 50,000 documents to return ~12,500 -- a full scatter-gather.
 
 **Performance comparison**:
 
@@ -185,140 +187,138 @@ This is why shard key selection matters: your most frequent queries should inclu
 
 Even with sharding, you still need indexes for efficient queries within each shard. Create an index on `event_type`:
 
-```javascript
-// Create an index on event_type (applies to ALL shards automatically)
-db.events_hashed.createIndex({ event_type: 1 })
+```python
+# create_index() on a sharded collection propagates to ALL shards automatically
+db.events_hashed.create_index([("event_type", 1)])
+print("Index created on all shards")
 
-// Now run the scatter-gather query again
-db.events_hashed.find({ event_type: "purchase" }).explain("executionStats")
+# Run the scatter-gather query again — same query, now with an index
+plan2 = db.events_hashed.find({"event_type": "purchase"}).explain("executionStats")
+
+winning2 = plan2["queryPlanner"]["winningPlan"]
+stats2   = plan2["executionStats"]
+
+print("Stage:          ", winning2["stage"])         # still SHARD_MERGE (no shard key)
+per_shard = [(s["shardName"], s["winningPlan"].get("inputStage", {}).get("stage", s["winningPlan"]["stage"]))
+             for s in winning2["shards"]]
+print("Per-shard stage:", per_shard)                 # [('shard1rs', 'IXSCAN'), ('shard2rs', 'IXSCAN')]
+print("Docs examined:  ", stats2["totalDocsExamined"])  # 12,502 — down from 50,000!
+print("Docs returned:  ", stats2["nReturned"])          # 12,502
+print("Time (ms):      ", stats2["executionTimeMillis"]) # ~18 ms
 ```
 
-Updated output:
-
-```javascript
-{
-  "winningPlan": {
-    "stage": "SHARD_MERGE",          // still scatter-gather (no shard key)
-    "shards": [
-      { "shardName": "shard1rs",
-        "winningPlan": { "stage": "FETCH",
-          "inputStage": { "stage": "IXSCAN", "indexName": "event_type_1" }
-        }
-      },
-      { "shardName": "shard2rs",
-        "winningPlan": { "stage": "FETCH",
-          "inputStage": { "stage": "IXSCAN", "indexName": "event_type_1" }  
-        }
-      }
-    ]
-  },
-  "executionStats": {
-    "nReturned": 12502,
-    "totalDocsExamined": 12502,      // ← Only examined matching docs
-    "executionTimeMillis": 18        // Faster: index used on each shard
-  }
-}
+Expected output:
+```
+Stage:           SHARD_MERGE          ← still scatter-gather (no shard key)
+Per-shard stage: [('shard1rs', 'IXSCAN'), ('shard2rs', 'IXSCAN')]
+Docs examined:   12502                ← down from 50,000!
+Docs returned:   12502
+Time (ms):       18                   ← faster: index used on each shard
 ```
 
 It's still `SHARD_MERGE` (both shards contacted) but now each shard uses its local index -- `totalDocsExamined` dropped from 50,000 to 12,502. Scatter-gather + good indexes is acceptable; scatter-gather + collection scan is not.
 
 ## Exercise 5: Hashed vs Ranged Distribution
 
-Compare how hashed and ranged sharding distribute data differently.
+Compare how hashed and ranged sharding distribute data differently. Use mongosh for the distribution overview (admin):
 
 ```javascript
-// Hashed collection distribution
+// In mongosh
+use demo
 db.events_hashed.getShardDistribution()
-// Expect: ~50% on each shard (hashed shard key distributes evenly)
+// Expect: ~50% on each shard (hashed key distributes evenly)
 
-// Ranged collection distribution
 db.events_ranged.getShardDistribution()
-// Because user_id is "user_0001" to "user_1000" alphabetically,
-// the split point matters. Initial chunks may be uneven.
+// May be uneven — the split point between alphabetical ranges determines distribution
 ```
 
-Now observe the range query behavior:
+Now observe range query routing behavior using Python:
 
-```javascript
-// Range query on ranged collection
-db.events_ranged.find({
-  user_id: { $gte: "user_0001", $lte: "user_0100" }
+```python
+# Range query on ranged collection
+# May be SINGLE_SHARD if the range falls within one shard's key range,
+# or SHARD_MERGE if it spans the boundary
+plan_ranged = db.events_ranged.find({
+    "user_id": {"$gte": "user_0001", "$lte": "user_0100"}
 }).explain("executionStats")
-// May be SINGLE_SHARD if the range falls within one shard's key range
-// or SHARD_MERGE if it spans the shard boundary
 
-// Same range query on hashed collection
-db.events_hashed.find({
-  user_id: { $gte: "user_0001", $lte: "user_0100" }
+print("=== Ranged collection, range query ===")
+print("Stage:", plan_ranged["queryPlanner"]["winningPlan"]["stage"])
+print("Docs examined:", plan_ranged["executionStats"]["totalDocsExamined"])
+
+# Same range query on hashed collection
+# Will always be SHARD_MERGE: hashing destroys ordering
+plan_hashed = db.events_hashed.find({
+    "user_id": {"$gte": "user_0001", "$lte": "user_0100"}
 }).explain("executionStats")
-// Will be SHARD_MERGE: hashing destroys ordering, can't do targeted range queries
+
+print("\n=== Hashed collection, range query ===")
+print("Stage:", plan_hashed["queryPlanner"]["winningPlan"]["stage"])  # SHARD_MERGE
+print("Docs examined:", plan_hashed["executionStats"]["totalDocsExamined"])  # all docs
 ```
 
 **Key insight**: Hashed sharding gives you even write distribution but costs you range query efficiency. Ranged sharding preserves range query locality but risks hot spots on monotonic keys.
 
 ## Exercise 6: Connect via pymongo (Application View)
 
-The application doesn't need to know about shards at all -- it just connects to `mongos`:
+The application doesn't need to know about shards at all -- it just connects to `mongos`.
 
-```bash
-cd demo-app/app
-python sharding_demo.py
-```
-
-The script demonstrates:
-
-1. Connecting through mongos (transparent to the application)
-2. Inserting data (mongos routes to correct shard)
-3. Reading data with and without shard key (mongos handles routing)
-4. Verifying which shard actually stored specific documents
+Run the cells below (they use the `client` and `db` from the Python Setup cell):
 
 ```python
-from pymongo import MongoClient
-
-# Application connects to mongos only -- no shard addresses
-client = MongoClient("mongodb://localhost:27017")
-db = client["demo"]
-
-# Insert -- mongos decides which shard based on user_id hash
-db.events_hashed.insert_one({
-    "user_id": "user_0042",
+# Insert — mongos decides which shard based on the user_id hash
+result = db.events_hashed.insert_one({
+    "user_id": "user_9999",
     "event_type": "purchase",
-    "timestamp": datetime.now()
+    "timestamp": datetime.datetime.utcnow(),
 })
+print("Inserted:", result.inserted_id)
 
-# Query -- mongos routes to shard that owns user_0042
-result = db.events_hashed.find_one({"user_id": "user_0042"})
+# Query — mongos routes to the shard that owns user_9999
+doc = db.events_hashed.find_one({"user_id": "user_9999"})
+print("Retrieved:", doc["user_id"], doc["event_type"])
 ```
+
+Verify which shard stored the document using the explain plan:
+
+```python
+plan = db.events_hashed.find({"user_id": "user_9999"}).explain("executionStats")
+print("Routed to shard:", plan["queryPlanner"]["winningPlan"]["shards"][0]["shardName"])
+```
+
+**The application code is identical to single-node MongoDB.** `mongos` handles all routing transparently — no shard addresses, no sharding logic in application code.
 
 ## Exercise 7: Tracing Query Routing in Logs
 
-Enable profiling on mongos to see routing decisions in logs:
+Enable profiling on mongos to see routing decisions (mongosh admin):
 
 ```javascript
-// Enable verbose logging for query routing
-db.setProfilingLevel(2)   // profile all operations
-
-// Run a query
-db.events_hashed.find({ user_id: "user_0001" }).toArray()
-
-// View the profile log
-db.system.profile.find().sort({ ts: -1 }).limit(1).pretty()
-```
-
-Or watch the mongos container logs directly as you run queries:
-
-```bash
-# In a separate terminal, watch mongos logs
-docker logs mongos -f --tail=0
-```
-
-In another terminal, run queries:
-
-```javascript
+// In mongosh — setProfilingLevel and system.profile are admin operations
 mongosh "mongodb://localhost:27017"
 use demo
-db.events_hashed.find({ user_id: "user_0001" }).toArray()
-db.events_hashed.find({ event_type: "purchase" }).toArray()
+db.setProfilingLevel(2)   // profile all operations
+```
+
+Run queries from Python (the profiler will capture them):
+
+```python
+# These queries will be recorded by the profiler
+list(db.events_hashed.find({"user_id": "user_0001"}))
+list(db.events_hashed.find({"event_type": "purchase"}))
+```
+
+View the profile log in mongosh:
+
+```javascript
+// In mongosh
+db.system.profile.find().sort({ ts: -1 }).limit(2).pretty()
+```
+
+Or watch the mongos container logs in real time as you run Python queries:
+
+```bash
+# In a separate terminal
+docker logs mongos -f --tail=0
 ```
 
 The mongos logs will show which shards were contacted for each query, confirming what `explain()` told you.

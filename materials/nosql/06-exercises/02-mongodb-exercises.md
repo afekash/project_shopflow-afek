@@ -47,47 +47,71 @@ The platform has:
 
 ## Exercise 2: Index Optimization
 
-**Setup**: Create a collection with 200K documents in mongosh:
+**Setup**: Run this Python cell to create a collection with 200K documents. This also sets up the `db` reference used in all tasks below.
 
-```javascript
-use restaurant_db
+```python
+from pymongo import MongoClient
+import random
+import pprint
 
-let cuisines = ["italian", "chinese", "mexican", "japanese", "american", "indian"]
-let cities = ["tel_aviv", "jerusalem", "haifa", "beer_sheva", "eilat"]
+client = MongoClient("mongodb://localhost:27017")
+db = client["restaurant_db"]
 
-let docs = []
-for (let i = 0; i < 200000; i++) {
-  docs.push({
-    name: "Restaurant " + i,
-    city: cities[i % 5],
-    cuisine: cuisines[i % 6],
-    rating: Math.round((Math.random() * 4 + 1) * 10) / 10,  // 1.0 to 5.0
-    price_range: [1,2,3,4][i % 4],   // $ to $$$$
-    is_open: i % 7 !== 0,            // ~85% are open
-    review_count: Math.floor(Math.random() * 500)
-  })
-  if (docs.length === 2000) { db.restaurants.insertMany(docs); docs = [] }
-}
-print(db.restaurants.countDocuments(), "restaurants inserted")
+# Drop if re-running
+db.restaurants.drop()
+
+cuisines = ["italian", "chinese", "mexican", "japanese", "american", "indian"]
+cities   = ["tel_aviv", "jerusalem", "haifa", "beer_sheva", "eilat"]
+
+batch = []
+for i in range(200_000):
+    batch.append({
+        "name":         f"Restaurant {i}",
+        "city":         cities[i % 5],
+        "cuisine":      cuisines[i % 6],
+        "rating":       round(random.uniform(1.0, 5.0), 1),
+        "price_range":  [1, 2, 3, 4][i % 4],   # $ to $$$$
+        "is_open":      i % 7 != 0,             # ~85% open
+        "review_count": random.randint(0, 499),
+    })
+    if len(batch) == 2000:
+        db.restaurants.insert_many(batch)
+        batch = []
+
+print(db.restaurants.count_documents({}), "restaurants inserted")
 ```
 
-**Your tasks** (use `explain("executionStats")` for each):
+**Your tasks** (use `.explain("executionStats")` for each):
 
 1. **Query 1**: Find all Italian restaurants in Tel Aviv with rating ≥ 4.0, sorted by rating descending.
-   - Run it without an index. Note: stage type, totalDocsExamined, executionTimeMillis.
-   - Design the optimal index following the ESR rule. Create it.
+   - Run it without an index. Note: stage type, `totalDocsExamined`, `executionTimeMillis`.
+   - Design the optimal index following the ESR rule. Create it with `create_index()`.
    - Run it again. Compare the metrics.
+
+   ```python
+   # Helper to print the key explain metrics
+   def show_plan(cursor):
+       plan = cursor.explain("executionStats")
+       stats = plan["executionStats"]
+       winning = plan["queryPlanner"]["winningPlan"]
+       stage = winning.get("stage") or winning.get("inputStage", {}).get("stage", "?")
+       print(f"Stage:          {stage}")
+       print(f"Docs examined:  {stats['totalDocsExamined']}")
+       print(f"Docs returned:  {stats['nReturned']}")
+       print(f"Time (ms):      {stats['executionTimeMillis']}")
+   ```
 
 2. **Query 2**: Find open restaurants with price range 1 or 2, sorted by review_count descending.
    - What's the challenge with indexing `is_open` (boolean, low cardinality)?
    - What index would you create? Explain your reasoning.
-   - Test it.
+   - Test it using `show_plan()`.
 
-3. **Covered query**: Design a query and index combination where `totalDocsExamined: 0`. Show the explain output proving no documents were fetched.
+3. **Covered query**: Design a query and index combination where `totalDocsExamined` equals 0. Show the explain output proving no documents were fetched.
 
 4. **Audit your indexes**:
-   ```javascript
-   db.restaurants.aggregate([{ $indexStats: {} }])
+   ```python
+   for stat in db.restaurants.aggregate([{"$indexStats": {}}]):
+       print(stat["name"], "→ ops:", stat["accesses"]["ops"])
    ```
    Which indexes have actually been used? Are there any you should drop?
 
@@ -103,29 +127,125 @@ docker compose up -d
 bash init-replica.sh
 ```
 
+Use this Python setup cell throughout this exercise:
+
+```python
+from pymongo import MongoClient, ReadPreference
+from pymongo.write_concern import WriteConcern
+import time
+
+RS_URI = "mongodb://localhost:27017,localhost:27018,localhost:27019/?replicaSet=rs0"
+client = MongoClient(RS_URI)
+db = client["demo"]
+```
+
 **Your tasks:**
 
 1. **Identify the current primary**:
-   Connect to the replica set URI and find which node is the current primary.
-   
+   Use Python to discover which node is the current primary.
+
+   ```python
+   # The driver exposes topology info via the admin command
+   result = client.admin.command("isMaster")
+   print("Primary:", result["primary"])
+   print("All hosts:", result["hosts"])
+   ```
+
+   You can also check from mongosh:
    ```
    mongosh "mongodb://localhost:27017,localhost:27018,localhost:27019/?replicaSet=rs0"
+   rs.isMaster().primary
    ```
 
 2. **Insert a document and confirm replication**:
-   Insert a document on the primary. Wait 1 second. Read it from a secondary and confirm it's there.
+   Insert on the primary, then read it back from a secondary.
+
+   ```python
+   # Write to primary
+   db.events.insert_one({"type": "exercise_3", "user": "alice", "ts": time.time()})
+
+   # Wait for replication
+   time.sleep(1)
+
+   # Read from a secondary
+   secondary_db = client.get_database("demo", read_preference=ReadPreference.SECONDARY)
+   doc = secondary_db.events.find_one({"type": "exercise_3"})
+   print("Replicated:", doc is not None, "→", doc)
+   ```
 
 3. **Simulate failover**:
    Stop the primary container. Time how long the election takes. Which node becomes the new primary?
 
+   ```bash
+   # Find the current primary from step 1, then stop it:
+   docker compose stop mongo1   # adjust if a different node is primary
+   ```
+
+   In Python, poll for the new primary:
+   ```python
+   import time
+   start = time.time()
+   while True:
+       try:
+           result = client.admin.command("isMaster")
+           print(f"Primary: {result.get('primary')} ({time.time()-start:.1f}s elapsed)")
+           if result.get("ismaster"):
+               break
+       except Exception as e:
+           print(f"Waiting... ({e})")
+       time.sleep(1)
+   ```
+
 4. **Verify data integrity**:
    Connect to the new primary. Confirm all previously inserted data is present. Insert a new document.
+
+   ```python
+   # Client auto-reconnects to the new primary after election
+   count = db.events.count_documents({})
+   print(f"Documents on new primary: {count}")
+   db.events.insert_one({"type": "post_failover", "ts": time.time()})
+   ```
 
 5. **Restore and reconcile**:
    Start the stopped container back up. Wait for it to rejoin. Verify it has the document inserted on the new primary during the failover. Explain why: how did it get that document?
 
+   ```bash
+   docker compose start mongo1   # or whichever node you stopped
+   ```
+
+   ```python
+   time.sleep(15)  # allow time to rejoin and sync
+   # Connect directly to the rejoined node to confirm it caught up
+   old_primary = MongoClient("mongodb://localhost:27017", directConnection=True)
+   old_primary.admin.command("isMaster")  # should show stateStr: SECONDARY
+   count = old_primary["demo"].events.count_documents({})
+   print(f"Documents on rejoined node: {count}")
+   ```
+
 6. **Write concern experiment**:
-   Write a Python script (or mongosh loop) that inserts 50 documents with `w:1` and 50 documents with `w:majority`. Compare the total time. Calculate the per-operation overhead of majority write concern.
+   Measure the latency difference between `w=1` and `w="majority"`.
+
+   ```python
+   N = 50
+
+   # w=1 — only primary acknowledges
+   coll_w1 = db.get_collection("wc_test", write_concern=WriteConcern(w=1))
+   t0 = time.time()
+   for i in range(N):
+       coll_w1.insert_one({"i": i, "wc": 1})
+   t1 = (time.time() - t0) * 1000
+   print(f"w=1       — {N} inserts: {t1:.0f} ms  (avg {t1/N:.1f} ms/op)")
+
+   # w="majority" — majority of nodes must acknowledge
+   coll_maj = db.get_collection("wc_test", write_concern=WriteConcern(w="majority"))
+   t2 = time.time()
+   for i in range(N):
+       coll_maj.insert_one({"i": i, "wc": "majority"})
+   t3 = (time.time() - t2) * 1000
+   print(f"w=majority — {N} inserts: {t3:.0f} ms  (avg {t3/N:.1f} ms/op)")
+
+   print(f"Overhead per op: +{(t3-t1)/N:.1f} ms")
+   ```
 
 ---
 

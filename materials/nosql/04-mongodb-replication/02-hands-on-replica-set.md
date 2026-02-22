@@ -86,51 +86,75 @@ rs.printSecondaryReplicationInfo()
 //   0 secs (0 hrs) behind the primary
 ```
 
+## Python Setup
+
+All data operations in these exercises use pymongo. Run this cell once before starting:
+
+```python
+from pymongo import MongoClient, ReadPreference
+from pymongo.write_concern import WriteConcern
+import time, datetime
+
+RS_URI = "mongodb://localhost:27017,localhost:27018,localhost:27019/?replicaSet=rs0"
+client = MongoClient(RS_URI)
+db = client["demo"]
+```
+
 ## Exercise 1: Observe Replication
 
 **Goal**: Write to the primary and read the same data from a secondary.
 
+**Step 1**: Verify which node is the primary (mongosh admin check):
+
 ```javascript
-// Step 1: Connect to primary, verify which node it is
-mongosh "mongodb://localhost:27017"
+// In mongosh — rs.* commands are admin-only
+mongosh "mongodb://localhost:27017,localhost:27018,localhost:27019/?replicaSet=rs0"
 rs.isMaster().primary   // should show "mongo1:27017"
+```
 
-// Step 2: Insert a document on the primary
-use demo
-db.events.insertOne({
-  type: "page_view",
-  user: "alice",
-  url: "/products/laptop",
-  timestamp: new Date()
+**Step 2**: Insert a document on the primary using Python:
+
+```python
+result = db.events.insert_one({
+    "type": "page_view",
+    "user": "alice",
+    "url": "/products/laptop",
+    "timestamp": datetime.datetime.utcnow(),
 })
+print("Inserted:", result.inserted_id)
+```
 
-// Step 3: Open another terminal and connect to a secondary
-// (in a new terminal)
-mongosh "mongodb://localhost:27018"
+**Step 3**: Read the same document from a secondary:
 
-// By default, secondaries reject reads to prevent accidental stale reads
-db.events.find()
-// MongoServerError: not primary and secondaryOk=false
+```python
+# By default the driver reads from the primary. Force a secondary read:
+secondary_db = client.get_database("demo", read_preference=ReadPreference.SECONDARY)
 
-// Enable secondary reads (for this session)
-db.getMongo().setReadPref("secondary")
-// OR in newer mongosh:
-// use the readPreference option
+# Allow a moment for replication
+time.sleep(0.5)
 
-// Now read from the secondary
-db.events.find()
-// You should see the document written on the primary -- it has replicated!
+docs = list(secondary_db.events.find({"type": "page_view"}))
+print(f"Found on secondary: {len(docs)} document(s)")
+print(docs[0])
+# The document written on the primary is already here — it replicated!
+```
 
-// Step 4: Observe replication lag
-// Insert many documents rapidly on the primary
-// (switch back to primary terminal)
-use demo
-for (let i = 0; i < 10000; i++) {
-  db.events.insertOne({ i: i, ts: new Date() })
-}
+**Step 4**: Observe replication lag under heavy write load:
 
-// On the secondary, watch rs.status() to see optime catching up
+```python
+# Rapid bulk insert on the primary
+batch = [{"i": i, "ts": datetime.datetime.utcnow()} for i in range(10_000)]
+db.events.insert_many(batch)
+print("Inserted 10,000 documents")
+```
+
+Then check lag in mongosh (admin command):
+
+```javascript
+// In mongosh — check how far secondaries lag behind the primary
 rs.printSecondaryReplicationInfo()
+// source: mongo2:27017
+//   0 secs (0 hrs) behind the primary
 ```
 
 **What you observed**: Writes on the primary are asynchronously replicated to secondaries. Under light load, replication is near-instant. Under heavy write load, there may be a brief lag.
@@ -139,52 +163,56 @@ rs.printSecondaryReplicationInfo()
 
 **Goal**: Kill the primary and watch a new primary be elected automatically.
 
+**Step 1**: Verify the current primary and start a status watch loop (mongosh admin):
+
 ```javascript
-// Step 1: Verify the current primary
-mongosh "mongodb://localhost:27017"
+// In mongosh
+mongosh "mongodb://localhost:27017,localhost:27018,localhost:27019/?replicaSet=rs0"
 rs.isMaster().primary   // "mongo1:27017"
 
-// Step 2: Open a watch loop on the primary to monitor status
-// (keep this terminal open)
+// Keep this running to watch the election in real time
 while (true) {
   let status = rs.status().members.map(m => `${m.name}: ${m.stateStr}`)
   print(status.join(", "))
   sleep(1000)
 }
-// Output: mongo1:27017: PRIMARY, mongo2:27017: SECONDARY, mongo3:27017: SECONDARY
 ```
 
-Now kill the primary:
+**Step 2**: Kill the primary in a new terminal:
 
 ```bash
-# In a NEW terminal -- stop the primary container
 docker compose stop mongo1
 ```
 
-Watch the monitor loop in the first terminal:
+Watch the monitor loop output:
 ```
-mongo1:27017: PRIMARY, mongo2:27017: SECONDARY, mongo3:27017: SECONDARY
-mongo1:27017: UNKNOWN, mongo2:27017: SECONDARY, mongo3:27017: SECONDARY  ← primary gone
-mongo1:27017: UNKNOWN, mongo2:27017: SECONDARY, mongo3:27017: SECONDARY  ← election timer
-mongo1:27017: UNKNOWN, mongo2:27017: PRIMARY,   mongo3:27017: SECONDARY  ← new primary!
+mongo1:27017: PRIMARY,  mongo2:27017: SECONDARY, mongo3:27017: SECONDARY
+mongo1:27017: UNKNOWN,  mongo2:27017: SECONDARY, mongo3:27017: SECONDARY  ← primary gone
+mongo1:27017: UNKNOWN,  mongo2:27017: PRIMARY,   mongo3:27017: SECONDARY  ← new primary!
 ```
 
 The election typically completes in **10-20 seconds**.
 
-Connect to the new primary and verify the data is intact:
+**Step 3**: Verify data survived and write to the new primary using Python:
+
+```python
+# The pymongo client auto-discovers the new primary — no reconnect needed
+print("Primary now:", client.primary)
+
+count = db.events.count_documents({})
+print(f"All {count} documents survived the failover")
+
+# Write to the new primary
+db.events.insert_one({"type": "post_failover_write", "timestamp": datetime.datetime.utcnow()})
+print("Post-failover write succeeded")
+```
+
+Confirm in mongosh which node is now primary (admin check):
 
 ```javascript
-// Connect to the new primary (mongo2)
+// In mongosh — connect to the new primary
 mongosh "mongodb://localhost:27018"
 rs.isMaster().primary   // now "mongo2:27017"
-
-// Verify data survived the failover
-use demo
-db.events.countDocuments()
-// Shows all documents including those written before the failover
-
-// Write new data to the new primary
-db.events.insertOne({ type: "post_failover_write", timestamp: new Date() })
 ```
 
 **Bring the old primary back** (it will rejoin as a secondary):
@@ -193,16 +221,19 @@ db.events.insertOne({ type: "post_failover_write", timestamp: new Date() })
 docker compose start mongo1
 ```
 
-```javascript
-// Watch mongo1 rejoin in the monitor loop
-// mongo1:27017: STARTUP → RECOVERING → SECONDARY
+Wait ~15 seconds for mongo1 to sync, then verify with Python:
 
-// After it's back, check its data includes the post-failover write
-mongosh "mongodb://localhost:27017"
-db.getMongo().setReadPref("secondary")
-use demo
-db.events.findOne({ type: "post_failover_write" })
-// Present! mongo1 caught up via the oplog.
+```python
+time.sleep(15)
+
+# Connect directly to the old primary (now a secondary) to confirm it caught up
+old_primary = MongoClient("mongodb://localhost:27017", directConnection=True)
+old_primary_db = old_primary.get_database(
+    "demo", read_preference=ReadPreference.SECONDARY_PREFERRED
+)
+doc = old_primary_db.events.find_one({"type": "post_failover_write"})
+print("Post-failover write visible on rejoined node:", doc is not None)
+# True — mongo1 caught up via the oplog
 ```
 
 **What you observed**: MongoDB automatically detected the primary failure, elected a new primary without manual intervention, and maintained data integrity. The old primary rejoined as a secondary and caught up automatically via the oplog.
@@ -211,73 +242,57 @@ db.events.findOne({ type: "post_failover_write" })
 
 **Goal**: Use Python to connect to the replica set and demonstrate read routing.
 
-Run from `demo-app/app/`:
-
-```bash
-cd demo-app/app
-pip install -r requirements.txt
-python replica_demo.py
-```
-
-The script will show which node serves each read based on read preference. Look at `demo-app/app/replica_demo.py` for the full source.
-
-Key patterns demonstrated:
 ```python
-from pymongo import MongoClient, ReadPreference
+# Uses the RS_URI client from the Python Setup cell above
 
-# Replica set connection string -- driver discovers topology automatically
-client = MongoClient(
-    "mongodb://localhost:27017,localhost:27018,localhost:27019/?replicaSet=rs0"
-)
+# Default: reads go to the primary (always fresh data)
+db_primary = client.get_database("demo", read_preference=ReadPreference.PRIMARY)
+doc = db_primary.events.find_one({})
+info = db_primary.command("isMaster")
+print(f"Primary read — served by: {info.get('me')}  (isPrimary: {info.get('ismaster')})")
 
-# Default: reads from primary
-db_primary = client.get_database("demo")
-result = db_primary.products.find_one({})
+# Offload reads to secondaries (slightly stale, but offloads the primary)
+db_secondary = client.get_database("demo", read_preference=ReadPreference.SECONDARY)
+doc = db_secondary.events.find_one({})
+info = db_secondary.command("isMaster")
+print(f"Secondary read — served by: {info.get('me')}  (isPrimary: {info.get('ismaster')})")
 
-# Read from secondaries (for analytics/reporting)
-db_secondary = client.get_database(
-    "demo",
-    read_preference=ReadPreference.SECONDARY
-)
-result = db_secondary.products.find_one({})
-
-# Check which server handled the request
-result = db_secondary.command("isMaster")
-print(f"Connected to: {result.get('me')}")
-print(f"Is primary: {result.get('ismaster')}")
+# Prefer secondary, fall back to primary if no secondary is available
+db_sec_pref = client.get_database("demo", read_preference=ReadPreference.SECONDARY_PREFERRED)
+doc = db_sec_pref.events.find_one({})
+print(f"Secondary-preferred — returned: {doc['type'] if doc else None}")
 ```
+
+**What to observe**: the `me` field tells you which replica set member handled each read. Secondary reads route to a different host than the primary, demonstrating actual load distribution.
 
 ## Exercise 4: Write Concerns with pymongo
 
-**Goal**: Measure the latency difference between `w:1` and `w:majority`.
+**Goal**: Measure the latency difference between `w=1` and `w="majority"`.
 
 ```python
-import time
-from pymongo import MongoClient
-
-client = MongoClient("mongodb://localhost:27017,localhost:27018,localhost:27019/?replicaSet=rs0")
-db = client["demo"]
-
+# Uses the RS_URI client and db from the Python Setup cell above
 N = 100
 
-# w:1 -- only primary acknowledges
-start = time.time()
+# w=1 — only the primary acknowledges before returning
+coll_w1 = db.get_collection("wc_test", write_concern=WriteConcern(w=1))
+t0 = time.time()
 for i in range(N):
-    db.get_collection("wc_test", write_concern={"w": 1}).insert_one({"i": i, "wc": 1})
-t1 = (time.time() - start) * 1000
-print(f"w:1 - {N} inserts: {t1:.0f}ms (avg {t1/N:.1f}ms per insert)")
+    coll_w1.insert_one({"i": i, "wc": 1})
+t1 = (time.time() - t0) * 1000
+print(f"w=1       — {N} inserts: {t1:.0f} ms  (avg {t1/N:.1f} ms/op)")
 
-# w:majority -- majority of nodes must acknowledge
-start = time.time()
+# w="majority" — waits for 2 of 3 nodes to confirm
+coll_maj = db.get_collection("wc_test", write_concern=WriteConcern(w="majority"))
+t2 = time.time()
 for i in range(N):
-    db.get_collection("wc_test", write_concern={"w": "majority"}).insert_one({"i": i, "wc": "majority"})
-t2 = (time.time() - start) * 1000
-print(f"w:majority - {N} inserts: {t2:.0f}ms (avg {t2/N:.1f}ms per insert)")
+    coll_maj.insert_one({"i": i, "wc": "majority"})
+t3 = (time.time() - t2) * 1000
+print(f"w=majority — {N} inserts: {t3:.0f} ms  (avg {t3/N:.1f} ms/op)")
 
-print(f"Overhead of majority: +{t2-t1:.0f}ms total (+{(t2-t1)/N:.1f}ms/op)")
+print(f"Overhead per op: +{(t3-t1)/N:.1f} ms")
 ```
 
-**Expected results**: `w:majority` will be 5-20ms slower per operation. The trade-off: with `w:1`, a write acknowledged by only the primary could be lost if the primary crashes before replicating. With `w:majority`, the write is on at least 2 of 3 nodes -- it will survive a single-node failure.
+**Expected results**: `w="majority"` will be 5-20 ms slower per operation. The trade-off: with `w=1`, a write acknowledged by only the primary could be lost if the primary crashes before replicating. With `w="majority"`, the write is on at least 2 of 3 nodes -- it will survive a single-node failure.
 
 ## Exercise 5: Inspect the Oplog
 

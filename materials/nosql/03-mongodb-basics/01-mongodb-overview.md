@@ -101,89 +101,111 @@ exit
 
 This is enough to work through the exercises. We won't go deep on query syntax -- the goal is to understand the architecture.
 
+All examples below use **pymongo**, Python's MongoDB driver. Run these in a Jupyter notebook or Python script. Start every session with this setup cell:
+
+```python
+from pymongo import MongoClient
+from bson import ObjectId
+import datetime
+
+# Connect to the local MongoDB instance
+client = MongoClient("mongodb://localhost:27017")
+db = client["ecommerce"]  # created automatically on first write
+```
+
 ### Inserting Documents
 
-```javascript
-// Insert one document
-db.products.insertOne({
-  name: "Laptop Pro 15",
-  price: 1299.99,
-  category: "electronics",
-  stock: 45,
-  specs: {
-    ram: "16GB",
-    storage: "512GB SSD",
-    screen: "15.6 inch"
-  },
-  tags: ["laptop", "gaming", "portable"]
+```python
+# Insert one document
+result = db.products.insert_one({
+    "name": "Laptop Pro 15",
+    "price": 1299.99,
+    "category": "electronics",
+    "stock": 45,
+    "specs": {
+        "ram": "16GB",
+        "storage": "512GB SSD",
+        "screen": "15.6 inch"
+    },
+    "tags": ["laptop", "gaming", "portable"]
 })
+print(result.inserted_id)   # MongoDB-generated ObjectId
 
-// Insert many documents
-db.products.insertMany([
-  { name: "Wireless Mouse", price: 29.99, category: "electronics", stock: 200 },
-  { name: "USB-C Hub",      price: 49.99, category: "electronics", stock: 150 },
-  { name: "Monitor 27\"",   price: 399.99, category: "electronics", stock: 30 }
+# Insert many documents
+result = db.products.insert_many([
+    {"name": "Wireless Mouse", "price": 29.99,  "category": "electronics", "stock": 200},
+    {"name": "USB-C Hub",      "price": 49.99,  "category": "electronics", "stock": 150},
+    {"name": 'Monitor 27"',    "price": 399.99, "category": "electronics", "stock": 30},
 ])
+print(result.inserted_ids)  # list of ObjectIds
 ```
 
 MongoDB automatically generates an `_id` field of type `ObjectId` if you don't provide one.
 
 ### Finding Documents
 
-```javascript
-// Find all documents
-db.products.find()
+```python
+# Find all documents (returns a cursor; convert to list to print)
+all_products = list(db.products.find())
 
-// Find with filter
-db.products.find({ category: "electronics" })
+# Find with filter
+electronics = list(db.products.find({"category": "electronics"}))
 
-// Find with projection (select specific fields)
-db.products.find({ category: "electronics" }, { name: 1, price: 1, _id: 0 })
+# Find with projection (include only name and price, exclude _id)
+names_prices = list(db.products.find(
+    {"category": "electronics"},
+    {"name": 1, "price": 1, "_id": 0}
+))
 
-// Find one document
-db.products.findOne({ name: "Laptop Pro 15" })
+# Find one document
+laptop = db.products.find_one({"name": "Laptop Pro 15"})
 
-// Query operators
-db.products.find({ price: { $gt: 100 } })          // price > 100
-db.products.find({ price: { $gte: 100, $lte: 500 } }) // 100 <= price <= 500
-db.products.find({ tags: "gaming" })               // array contains "gaming"
-db.products.find({ "specs.ram": "16GB" })          // nested field query
+# Query operators
+over_100       = list(db.products.find({"price": {"$gt": 100}}))           # price > 100
+mid_range      = list(db.products.find({"price": {"$gte": 100, "$lte": 500}}))  # 100–500
+gaming_laptops = list(db.products.find({"tags": "gaming"}))                # array contains value
+ram_16gb       = list(db.products.find({"specs.ram": "16GB"}))             # nested field
 
-// Count
-db.products.countDocuments({ category: "electronics" })
+# Count
+count = db.products.count_documents({"category": "electronics"})
+print(f"{count} electronics products")
 ```
 
 ### Updating Documents
 
-```javascript
-// Update one document
-db.products.updateOne(
-  { name: "Laptop Pro 15" },           // filter
-  { $set: { price: 1199.99, stock: 42 } }  // update
+```python
+# Update one document
+result = db.products.update_one(
+    {"name": "Laptop Pro 15"},               # filter
+    {"$set": {"price": 1199.99, "stock": 42}}  # update
 )
+print(f"Matched: {result.matched_count}, Modified: {result.modified_count}")
 
-// Update many documents
-db.products.updateMany(
-  { category: "electronics" },
-  { $inc: { stock: -1 } }              // decrement stock by 1
+# Update many documents
+result = db.products.update_many(
+    {"category": "electronics"},
+    {"$inc": {"stock": -1}}   # decrement stock by 1
 )
+print(f"Modified: {result.modified_count} documents")
 
-// Upsert: update if exists, insert if not
-db.products.updateOne(
-  { name: "Keyboard Pro" },
-  { $set: { price: 89.99, category: "electronics" } },
-  { upsert: true }
+# Upsert: update if exists, insert if not
+db.products.update_one(
+    {"name": "Keyboard Pro"},
+    {"$set": {"price": 89.99, "category": "electronics"}},
+    upsert=True
 )
 ```
 
 ### Deleting Documents
 
-```javascript
-// Delete one
-db.products.deleteOne({ name: "USB-C Hub" })
+```python
+# Delete one document
+result = db.products.delete_one({"name": "USB-C Hub"})
+print(f"Deleted: {result.deleted_count}")
 
-// Delete many
-db.products.deleteMany({ stock: 0 })
+# Delete many documents
+result = db.products.delete_many({"stock": 0})
+print(f"Deleted: {result.deleted_count} out-of-stock products")
 ```
 
 ## Useful Admin Commands
@@ -213,22 +235,21 @@ db.products.find({ price: { $gt: 500 } }).explain("executionStats")
 | Task | Tool |
 |------|------|
 | Cluster administration, checking replica set status | mongosh |
-| Creating and analyzing indexes | mongosh |
-| Running explain plans | mongosh |
-| Exploring data interactively | mongosh |
-| Application code, connection strings | pymongo |
+| Server stats, oplog inspection | mongosh |
+| CRUD operations, queries, aggregations | pymongo |
+| Index creation and performance analysis | pymongo |
 | Read preferences and write concerns in code | pymongo |
 | Observing failover from app perspective | pymongo |
 
-**MongoDB Compass** is a GUI application that gives a visual view of collections, documents, and index usage. It's a convenient exploration tool but all exercises in this course use mongosh or pymongo.
+**MongoDB Compass** is a GUI application that gives a visual view of collections, documents, and index usage. It's a convenient exploration tool but all exercises in this course use pymongo (for data work) or mongosh (for admin).
 
 ## Summary
 
 - MongoDB stores BSON documents in collections (no fixed schema)
 - ObjectId encodes timestamp + machine info + counter for uniqueness without coordination
-- mongosh is a JavaScript REPL -- use it for all admin and exploration work
-- The pymongo driver for Python handles BSON serialization transparently
-- Basic CRUD operations: `insertOne`, `find`, `updateOne`, `deleteOne` -- enough to get started
+- mongosh is a JavaScript REPL -- use it for cluster administration and oplog inspection
+- The pymongo driver for Python handles BSON serialization transparently; use it for all CRUD and queries
+- Basic CRUD: `insert_one`, `find`, `update_one`, `delete_one` -- enough to get started
 
 ---
 

@@ -119,7 +119,7 @@ graph TD
 
 ```mermaid
 graph LR
-    App["App: insertOne()"] --> Primary
+    App["App: insert_one()"] --> Primary
     Primary -->|"acknowledge immediately"| W1["w:1 Fastest, less durable"]
     Primary -->|"wait for majority to confirm"| WMaj["w:majority Slower, more durable"]
     Primary --> S1["Secondary 1"]
@@ -138,26 +138,41 @@ graph LR
 | `w: majority` | Majority of nodes acknowledged   | High       | ~5-20ms |
 | `w: 3`        | All 3 nodes acknowledged         | Very high  | Slowest |
 
+The examples below use **pymongo**. Add this setup cell once at the top of your notebook:
 
-```javascript
-// mongosh examples
-db.orders.insertOne(
-  { customer: "alice", total: 1299 },
-  { writeConcern: { w: "majority", wtimeout: 5000 } }
-)
+```python
+from pymongo import MongoClient, ReadPreference
+from pymongo.write_concern import WriteConcern
+from pymongo.read_concern import ReadConcern
 
-// w: "majority" + journal: true = most durable without sacrificing too much speed
-db.payments.insertOne(
-  { amount: 9999, type: "transfer" },
-  { writeConcern: { w: "majority", j: true } }
+# Replica set connection — driver auto-discovers the topology
+client = MongoClient(
+    "mongodb://localhost:27017,localhost:27018,localhost:27019/?replicaSet=rs0"
 )
+db = client["demo"]
+```
+
+```python
+# Write with majority write concern (waits for 2 of 3 nodes to confirm)
+orders_coll = db.get_collection(
+    "orders",
+    write_concern=WriteConcern(w="majority", wtimeout=5000)
+)
+orders_coll.insert_one({"customer": "alice", "total": 1299})
+
+# Most durable: majority + journal flush
+payments_coll = db.get_collection(
+    "payments",
+    write_concern=WriteConcern(w="majority", j=True)
+)
+payments_coll.insert_one({"amount": 9999, "type": "transfer"})
 ```
 
 **Choosing write concern:**
 
-- Financial transactions, user accounts: `w: majority` (losing a confirmed write is unacceptable)
-- High-volume event logs, metrics: `w: 1` (losing a few events is acceptable, throughput matters)
-- Cache warming, temp data: `w: 0` (don't care if it's lost)
+- Financial transactions, user accounts: `w="majority"` (losing a confirmed write is unacceptable)
+- High-volume event logs, metrics: `w=1` (losing a few events is acceptable, throughput matters)
+- Cache warming, temp data: `w=0` (don't care if it's lost)
 
 ## Read Preference
 
@@ -187,11 +202,18 @@ graph TD
 
 **Important**: Reads from secondaries may be **stale** (lag behind the primary). If your application writes a record and immediately reads it back, reading from a secondary might not see the new write. Use `primary` or `primaryPreferred` for read-your-writes consistency.
 
-```javascript
-// mongosh: force a secondary read (for demonstration)
-// Connect to a secondary directly
-db.getMongo().setReadPref("secondary")
-db.products.find({ category: "electronics" })
+```python
+# Default: reads go to the primary (always fresh)
+primary_db = client.get_database("demo", read_preference=ReadPreference.PRIMARY)
+list(primary_db.products.find({"category": "electronics"}))
+
+# Offload analytics to secondaries (data may be slightly stale)
+secondary_db = client.get_database("demo", read_preference=ReadPreference.SECONDARY)
+list(secondary_db.products.find({"category": "electronics"}))
+
+# Prefer secondary, fall back to primary if none available
+sec_pref_db = client.get_database("demo", read_preference=ReadPreference.SECONDARY_PREFERRED)
+sec_pref_db.products.find_one({"category": "electronics"})
 ```
 
 ## Read Concern
@@ -206,12 +228,13 @@ db.products.find({ category: "electronics" })
 | `linearizable`    | Data guaranteed to reflect all successful majority-committed writes before the read | Strongest, slowest                |
 
 
-```javascript
-// Read only data confirmed by majority (won't read rolled-back writes)
-db.accounts.findOne(
-  { _id: "account_42" },
-  { readConcern: { level: "majority" } }
+```python
+# Read only data confirmed by majority (won't return rolled-back writes)
+accounts_coll = db.get_collection(
+    "accounts",
+    read_concern=ReadConcern(level="majority")
 )
+account = accounts_coll.find_one({"_id": "account_42"})
 ```
 
 **Most applications use `local` read concern** -- it's fast and consistent enough for most use cases. Use `majority` when you must guarantee you're reading data that has survived a potential primary failover.

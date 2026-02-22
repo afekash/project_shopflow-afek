@@ -38,31 +38,33 @@ graph TD
 
 Index on one field. Supports equality, range, and sort on that field.
 
-```javascript
-// Create an index on the price field
-db.products.createIndex({ price: 1 })   // 1 = ascending, -1 = descending
+```python
+# Create an index on the price field (1 = ascending, -1 = descending)
+db.products.create_index([("price", 1)])
 
-// These queries will use the index:
-db.products.find({ price: 1299 })
-db.products.find({ price: { $gt: 500, $lt: 1000 } })
-db.products.find({}).sort({ price: 1 })
+# These queries will use the index:
+list(db.products.find({"price": 1299}))
+list(db.products.find({"price": {"$gt": 500, "$lt": 1000}}))
+list(db.products.find({}).sort("price", 1))
 ```
 
 ### Compound Index
 
 Index on multiple fields. The order of fields matters significantly.
 
-```javascript
-// Index on category + price
-db.products.createIndex({ category: 1, price: -1 })
+```python
+import pymongo
 
-// Queries that use this index:
-db.products.find({ category: "electronics" })                          // prefix match
-db.products.find({ category: "electronics", price: { $gt: 500 } })    // both fields
-db.products.find({ category: "electronics" }).sort({ price: -1 })     // prefix + sort
+# Index on category (ascending) + price (descending)
+db.products.create_index([("category", 1), ("price", -1)])
 
-// This query CANNOT use the compound index efficiently:
-db.products.find({ price: { $gt: 500 } })   // doesn't start with 'category'
+# Queries that use this index:
+list(db.products.find({"category": "electronics"}))                               # prefix match
+list(db.products.find({"category": "electronics", "price": {"$gt": 500}}))       # both fields
+list(db.products.find({"category": "electronics"}).sort("price", -1))            # prefix + sort
+
+# This query CANNOT use the compound index efficiently (doesn't start with 'category'):
+list(db.products.find({"price": {"$gt": 500}}))
 ```
 
 **The ESR Rule** (Equality, Sort, Range): Structure compound indexes so that:
@@ -70,26 +72,26 @@ db.products.find({ price: { $gt: 500 } })   // doesn't start with 'category'
 2. **Sort** fields come next
 3. **Range** fields come last (fields with `$gt`, `$lt`, `$in`)
 
-```javascript
-// Query: find electronics, sorted by name, with price > 500
-// Optimal compound index follows ESR:
-db.products.createIndex({
-  category: 1,   // E: equality (category = "electronics")
-  name: 1,       // S: sort (sort by name)
-  price: 1       // R: range (price > 500)
-})
+```python
+# Query: find electronics, sorted by name, with price > 500
+# Optimal compound index follows ESR:
+db.products.create_index([
+    ("category", 1),   # E: equality (category = "electronics")
+    ("name", 1),       # S: sort (sort by name)
+    ("price", 1),      # R: range (price > 500)
+])
 ```
 
 ### Multikey Index (Arrays)
 
 When you index a field that contains an array, MongoDB creates index entries for each element in the array. This allows efficient queries like "find documents where array contains value X."
 
-```javascript
-// Products have a tags array: ["laptop", "gaming", "portable"]
-db.products.createIndex({ tags: 1 })   // automatically a multikey index
+```python
+# Products have a tags array: ["laptop", "gaming", "portable"]
+db.products.create_index([("tags", 1)])   # automatically a multikey index
 
-// Now this query is fast:
-db.products.find({ tags: "gaming" })   // finds any document with "gaming" in tags array
+# Now this query is fast:
+list(db.products.find({"tags": "gaming"}))   # finds any document with "gaming" in tags
 ```
 
 One compound index can only have one multikey field.
@@ -98,40 +100,48 @@ One compound index can only have one multikey field.
 
 Instead of the natural value, stores the hash of the field value. Supports only equality queries (no range, no sort). Used primarily as shard keys (covered in the sharding module).
 
-```javascript
-db.users.createIndex({ user_id: "hashed" })
+```python
+db.users.create_index([("user_id", "hashed")])
 
-// Supports: db.users.find({ user_id: "user_42" })
-// Does NOT support: db.users.find({ user_id: { $gt: "user_40" } })
+# Supports equality:
+db.users.find_one({"user_id": "user_42"})
+
+# Does NOT support range:
+# db.users.find({"user_id": {"$gt": "user_40"}})  ← won't use the hashed index
 ```
 
 ### TTL Index (Time-To-Live)
 
 Automatically deletes documents after a specified time period. A background process runs every 60 seconds and removes expired documents.
 
-```javascript
-// Delete session documents 30 minutes after their created_at time
-db.sessions.createIndex({ created_at: 1 }, { expireAfterSeconds: 1800 })
+```python
+# Delete session documents 30 minutes after their created_at time
+db.sessions.create_index([("created_at", 1)], expireAfterSeconds=1800)
 
-// Or expire at a specific datetime stored in the document
-db.events.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 })
+# Or expire at a specific datetime stored in the document
+db.events.create_index([("expires_at", 1)], expireAfterSeconds=0)
 ```
 
 ### Text Index
 
 Enables full-text search across string fields.
 
-```javascript
-db.articles.createIndex({ title: "text", content: "text" })
-db.articles.find({ $text: { $search: "mongodb replication" } })
+```python
+db.articles.create_index([("title", "text"), ("content", "text")])
+list(db.articles.find({"$text": {"$search": "mongodb replication"}}))
 ```
 
 ## The `explain()` Method
 
 `explain()` is the most important tool for understanding index usage and query performance. Always use it before and after adding indexes in production.
 
-```javascript
-db.products.find({ category: "electronics", price: { $gt: 500 } }).explain("executionStats")
+```python
+import pprint
+
+plan = db.products.find(
+    {"category": "electronics", "price": {"$gt": 500}}
+).explain("executionStats")
+pprint.pprint(plan)
 ```
 
 ### Reading the Output
@@ -176,114 +186,152 @@ The critical fields to look at:
 
 ## Hands-On Exercise: Index Impact
 
-This exercise demonstrates the difference between a collection scan and an index scan on 100,000 documents.
+This exercise demonstrates the difference between a collection scan and an index scan on 100,000 documents. Run each cell in sequence in a Jupyter notebook.
 
-### Setup: Generate Test Data
+### Setup: Connect and Generate Test Data
 
-```javascript
-// Run in mongosh
-use indexdemo
+```python
+from pymongo import MongoClient
+import random
+import datetime
+import pprint
+import time
 
-// Insert 100,000 product documents
-const categories = ["electronics", "clothing", "furniture", "books", "sports"]
-const brands = ["BrandA", "BrandB", "BrandC", "BrandD", "BrandE"]
+client = MongoClient("mongodb://localhost:27017")
+db = client["indexdemo"]
 
-let docs = []
-for (let i = 0; i < 100000; i++) {
-  docs.push({
-    sku: `PROD-${String(i).padStart(6, '0')}`,
-    name: `Product ${i}`,
-    category: categories[i % 5],
-    brand: brands[i % 5],
-    price: Math.round((Math.random() * 2000 + 10) * 100) / 100,
-    stock: Math.floor(Math.random() * 500),
-    created_at: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000)
-  })
-  
-  if (docs.length === 1000) {
-    db.products.insertMany(docs)
-    docs = []
-  }
-}
-db.products.countDocuments()  // Should be 100000
+# Drop collection if it exists from a previous run
+db.products.drop()
+
+categories = ["electronics", "clothing", "furniture", "books", "sports"]
+brands = ["BrandA", "BrandB", "BrandC", "BrandD", "BrandE"]
+
+# Insert 100,000 documents in batches of 1,000
+batch = []
+now = datetime.datetime.utcnow()
+for i in range(100_000):
+    batch.append({
+        "sku": f"PROD-{i:06d}",
+        "name": f"Product {i}",
+        "category": categories[i % 5],
+        "brand": brands[i % 5],
+        "price": round(random.uniform(10, 2010), 2),
+        "stock": random.randint(0, 499),
+        "created_at": now - datetime.timedelta(seconds=random.randint(0, 365 * 24 * 3600)),
+    })
+    if len(batch) == 1000:
+        db.products.insert_many(batch)
+        batch = []
+
+print(db.products.count_documents({}), "documents inserted")  # should be 100,000
 ```
 
 ### Step 1: Query Without an Index (COLLSCAN)
 
-```javascript
-// Check existing indexes (should only be _id)
-db.products.getIndexes()
+```python
+# Check existing indexes — only the default _id index should be present
+print(db.products.index_information())
 
-// Run a query and check the execution plan
-db.products.find({ category: "electronics", price: { $gt: 800 } }).explain("executionStats")
+# Run a query and inspect the execution plan
+plan = db.products.find(
+    {"category": "electronics", "price": {"$gt": 800}}
+).explain("executionStats")
+
+stats = plan["executionStats"]
+stage = plan["queryPlanner"]["winningPlan"].get("stage", "")
+# If nested, find the COLLSCAN stage
+if "inputStage" in plan["queryPlanner"]["winningPlan"]:
+    stage = plan["queryPlanner"]["winningPlan"]["inputStage"].get("stage", stage)
+
+print(f"Stage:              {stage}")                          # COLLSCAN
+print(f"Docs examined:      {stats['totalDocsExamined']}")    # 100,000
+print(f"Docs returned:      {stats['nReturned']}")            # ~20,000
+print(f"Execution time:     {stats['executionTimeMillis']} ms")  # ~80–300 ms
 ```
 
 Look at the output:
-- `stage`: should be `COLLSCAN`
-- `totalDocsExamined`: 100,000 (scanned entire collection)
-- `nReturned`: ~20,000 (electronics is 1/5 of data, price > 800 is roughly half)
-- `executionTimeMillis`: probably 80-300ms
+- `Stage`: should be `COLLSCAN`
+- `Docs examined`: 100,000 (scanned entire collection)
+- `Docs returned`: ~20,000 (electronics is 1/5 of data, price > 800 is roughly half)
+- `Execution time`: probably 80–300 ms
 
 ### Step 2: Add an Index and Compare
 
-```javascript
-// Create a compound index following ESR rule
-// Query: category (equality) + price (range)
-db.products.createIndex({ category: 1, price: 1 })
+```python
+# Create a compound index following the ESR rule:
+# category (equality) comes before price (range)
+db.products.create_index([("category", 1), ("price", 1)])
 
-// Run the SAME query again
-db.products.find({ category: "electronics", price: { $gt: 800 } }).explain("executionStats")
+# Run the SAME query again
+plan2 = db.products.find(
+    {"category": "electronics", "price": {"$gt": 800}}
+).explain("executionStats")
+
+stats2 = plan2["executionStats"]
+winning = plan2["queryPlanner"]["winningPlan"]
+ixscan_stage = winning.get("inputStage", {}).get("stage", winning.get("stage", ""))
+
+print(f"Stage:              {ixscan_stage}")                    # IXSCAN
+print(f"Docs examined:      {stats2['totalDocsExamined']}")    # ~20,000
+print(f"Docs returned:      {stats2['nReturned']}")
+print(f"Execution time:     {stats2['executionTimeMillis']} ms")  # ~10–50 ms
 ```
 
 Now observe:
-- `stage`: `IXSCAN` (using the index)
-- `totalDocsExamined`: ~20,000 (only documents that match)
-- `nReturned`: same as before
-- `executionTimeMillis`: probably 10-50ms -- significantly faster
+- `Stage`: `IXSCAN` (using the index)
+- `Docs examined`: ~20,000 (only the documents that actually match)
+- `Execution time`: probably 10–50 ms — significantly faster
 
 ### Step 3: Covered Query (Even Faster)
 
-A **covered query** is one where the index contains all the fields the query needs -- MongoDB never needs to fetch the actual documents.
+A **covered query** is one where the index contains all the fields the query needs — MongoDB never needs to fetch the actual documents.
 
-```javascript
-// This index covers: category (filter), price (filter), name (projection)
-db.products.createIndex({ category: 1, price: 1, name: 1 })
+```python
+# This index covers: category (filter), price (filter), name (projection)
+db.products.create_index([("category", 1), ("price", 1), ("name", 1)])
 
-// Query that only asks for fields in the index
-db.products.find(
-  { category: "electronics", price: { $gt: 800 } },
-  { category: 1, price: 1, name: 1, _id: 0 }    // project only indexed fields
+# Query that only asks for fields contained in the index
+plan3 = db.products.find(
+    {"category": "electronics", "price": {"$gt": 800}},
+    {"category": 1, "price": 1, "name": 1, "_id": 0}   # project only indexed fields
 ).explain("executionStats")
+
+stats3 = plan3["executionStats"]
+print(f"Docs examined:  {stats3['totalDocsExamined']}")   # 0 — no document fetch!
+print(f"Docs returned:  {stats3['nReturned']}")
+print(f"Execution time: {stats3['executionTimeMillis']} ms")
 ```
 
-Look for: `totalDocsExamined: 0` -- MongoDB served the result entirely from the index without reading a single document. This is the fastest possible query.
+Look for `Docs examined: 0` — MongoDB served the entire result from the index without reading a single document. This is the fastest possible query.
 
 ### Step 4: Observe the Write Cost
 
-```javascript
-// Check index sizes
-db.products.stats().indexSizes
+```python
+# Drop all non-_id indexes to get a clean baseline
+db.products.drop_indexes()
 
-// Measure insert time WITHOUT extra indexes (drop them first)
-db.products.dropIndexes()   // drops all except _id
+# Measure insert time WITHOUT indexes
+batch_no_idx = [{"sku": f"BATCH-{i}", "category": "electronics", "price": 999, "stock": 10}
+                for i in range(1000)]
+t0 = time.time()
+db.products.insert_many(batch_no_idx)
+t_no_idx = (time.time() - t0) * 1000
+print(f"Insert without indexes: {t_no_idx:.0f} ms")
 
-let start = Date.now()
-db.products.insertMany(Array.from({length: 1000}, (_, i) => ({
-  sku: `BATCH-${i}`, category: "electronics", price: 999, stock: 10
-})))
-print(`Insert without indexes: ${Date.now() - start}ms`)
+# Recreate the compound index
+db.products.create_index([("category", 1), ("price", 1)])
 
-// Recreate the compound index
-db.products.createIndex({ category: 1, price: 1 })
-
-start = Date.now()
-db.products.insertMany(Array.from({length: 1000}, (_, i) => ({
-  sku: `BATCH2-${i}`, category: "electronics", price: 999, stock: 10
-})))
-print(`Insert with index: ${Date.now() - start}ms`)
+# Measure insert time WITH the index
+batch_with_idx = [{"sku": f"BATCH2-{i}", "category": "electronics", "price": 999, "stock": 10}
+                  for i in range(1000)]
+t1 = time.time()
+db.products.insert_many(batch_with_idx)
+t_with_idx = (time.time() - t1) * 1000
+print(f"Insert with index:      {t_with_idx:.0f} ms")
+print(f"Overhead per insert:    {(t_with_idx - t_no_idx) / 1000:.2f} ms")
 ```
 
-You'll see inserts are slower with indexes -- the B-tree must be updated for every write.
+You'll see inserts are slower with indexes — the B-tree must be updated for every write.
 
 ## Index Overhead and Best Practices
 
@@ -299,10 +347,10 @@ You'll see inserts are slower with indexes -- the B-tree must be updated for eve
 - Use `explain()` to verify that your queries use the index you created
 - Audit unused indexes with `db.collection.aggregate([{$indexStats: {}}])`
 
-```javascript
-// Find indexes that haven't been used
-db.products.aggregate([{ $indexStats: {} }])
-// Look for indexes with low or zero 'accesses.ops' count
+```python
+# Find indexes that haven't been used (low or zero accesses.ops)
+for stat in db.products.aggregate([{"$indexStats": {}}]):
+    print(stat["name"], "→ ops:", stat["accesses"]["ops"])
 ```
 
 ## Connecting to Sharding
@@ -311,10 +359,10 @@ db.products.aggregate([{ $indexStats: {} }])
 
 This becomes important in the sharding module -- if your shard key is a monotonically increasing value (like a timestamp or auto-increment ID), all new writes land on the same shard. A hashed shard key distributes the writes evenly.
 
-```javascript
-// Preview: hashed index as shard key ensures even distribution
-db.events.createIndex({ user_id: "hashed" })
-sh.shardCollection("mydb.events", { user_id: "hashed" })
+```python
+# Preview: hashed index as shard key ensures even write distribution
+db.events.create_index([("user_id", "hashed")])
+# sh.shardCollection("mydb.events", {"user_id": "hashed"})  ← run in mongosh as admin
 ```
 
 (Covered in depth in [05 - Sharding Architecture](../05-mongodb-sharding/01-sharding-architecture.md))
