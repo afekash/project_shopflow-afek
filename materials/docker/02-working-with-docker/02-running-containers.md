@@ -109,19 +109,12 @@ docker run -d -p 127.0.0.1:8080:80 nginx
 Pass configuration to containers with `-e`:
 
 ```bash
-docker run -d \
-  -e POSTGRES_PASSWORD=secret \
-  -e POSTGRES_DB=mydb \
-  postgres
+docker run -d -e POSTGRES_PASSWORD=secret -e POSTGRES_DB=mydb postgres
 ```
 
 **Multiple variables:**
 ```bash
-docker run -d \
-  -e DATABASE_URL=postgresql://localhost/mydb \
-  -e API_KEY=abc123 \
-  -e DEBUG=true \
-  myapp
+docker run -d -e DATABASE_URL=postgresql://localhost/mydb -e API_KEY=abc123 -e DEBUG=true myapp
 ```
 
 **Load from file:**
@@ -367,14 +360,7 @@ docker run -d --restart on-failure:3 --name myapp myapp-image
 
 ```bash
 # Start PostgreSQL with persistent data (volume) and password
-docker run -d \
-  --name postgres-db \
-  --restart unless-stopped \
-  -e POSTGRES_PASSWORD=mypassword \
-  -e POSTGRES_DB=myapp \
-  -p 5432:5432 \
-  -v pgdata:/var/lib/postgresql/data \
-  postgres:16
+docker run -d --name postgres-db --restart unless-stopped -e POSTGRES_PASSWORD=mypassword -e POSTGRES_DB=myapp -p 5432:5432 -v pgdata:/var/lib/postgresql/data postgres:16
 
 # Verify it's running
 docker ps

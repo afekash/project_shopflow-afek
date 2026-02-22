@@ -258,11 +258,7 @@ Docker uses Linux kernel features to isolate containers:
 **Example:** Running a container with resource limits:
 
 ```bash
-docker run -d \
-  --name limited \
-  --memory="512m" \
-  --cpus="0.5" \
-  nginx
+docker run -d --name limited --memory="512m" --cpus="0.5" nginx
 
 # This container can use at most 512MB RAM and 50% of one CPU core
 ```

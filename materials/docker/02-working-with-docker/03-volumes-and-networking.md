@@ -57,11 +57,7 @@ docker volume inspect mydata
 
 **Mount a volume into a container:**
 ```bash
-docker run -d \
-  --name db \
-  -e POSTGRES_PASSWORD=secret \
-  -v mydata:/var/lib/postgresql/data \
-  postgres
+docker run -d --name db -e POSTGRES_PASSWORD=secret -v mydata:/var/lib/postgresql/data postgres
 ```
 
 **Syntax:** `-v VOLUME_NAME:CONTAINER_PATH`
@@ -329,21 +325,11 @@ def read_root():
 docker network create myapp-network
 
 # Start PostgreSQL on the network
-docker run -d \
-  --name db \
-  --network myapp-network \
-  -e POSTGRES_PASSWORD=secret \
-  -e POSTGRES_DB=myapp \
-  -v pgdata:/var/lib/postgresql/data \
-  postgres
+docker run -d --name db --network myapp-network -e POSTGRES_PASSWORD=secret -e POSTGRES_DB=myapp -v pgdata:/var/lib/postgresql/data postgres
 
 # Build and start the web app on the same network
 docker build -t myapp .
-docker run -d \
-  --name webapp \
-  --network myapp-network \
-  -p 8000:8000 \
-  myapp
+docker run -d --name webapp --network myapp-network -p 8000:8000 myapp
 
 # Test it
 curl http://localhost:8000
@@ -362,10 +348,7 @@ curl http://localhost:8000
 **Backup:**
 ```bash
 # Create a backup by running a temporary container
-docker run --rm \
-  -v pgdata:/data \
-  -v $(pwd):/backup \
-  alpine tar czf /backup/pgdata-backup.tar.gz -C /data .
+docker run --rm -v pgdata:/data -v $(pwd):/backup alpine tar czf /backup/pgdata-backup.tar.gz -C /data .
 
 # Creates pgdata-backup.tar.gz on host
 ```
@@ -373,10 +356,7 @@ docker run --rm \
 **Restore:**
 ```bash
 # Restore from backup
-docker run --rm \
-  -v pgdata:/data \
-  -v $(pwd):/backup \
-  alpine tar xzf /backup/pgdata-backup.tar.gz -C /data
+docker run --rm -v pgdata:/data -v $(pwd):/backup alpine tar xzf /backup/pgdata-backup.tar.gz -C /data
 ```
 
 **Best Practice:** Automate backups with scripts or orchestration tools (e.g., Kubernetes CronJobs).
@@ -394,12 +374,7 @@ In production, you often need volumes that work across multiple hosts (e.g., in 
 
 **Example: NFS volume**
 ```bash
-docker volume create \
-  --driver local \
-  --opt type=nfs \
-  --opt o=addr=192.168.1.100,rw \
-  --opt device=:/path/to/share \
-  nfs-volume
+docker volume create --driver local --opt type=nfs --opt o=addr=192.168.1.100,rw --opt device=:/path/to/share nfs-volume
 
 docker run -d -v nfs-volume:/data myapp
 ```

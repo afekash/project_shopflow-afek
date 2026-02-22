@@ -124,16 +124,10 @@ For more control, use a custom Dockerfile.
 FROM python:3.11-slim
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y git curl && rm -rf /var/lib/apt/lists/*
 
 # Install Python tools
-RUN pip install --no-cache-dir \
-    black \
-    flake8 \
-    pytest
+RUN pip install --no-cache-dir black flake8 pytest
 
 # Set working directory
 WORKDIR /workspace

@@ -47,11 +47,7 @@ When you work with MongoDB, you use JSON syntax in mongosh and Python dicts in p
 Start a single MongoDB node (for this module; replica sets and sharding come later):
 
 ```bash
-docker run -d \
-  --name mongodb \
-  -p 27017:27017 \
-  -v mongodb_data:/data/db \
-  mongo:7
+docker run -d --name mongodb -p 27017:27017 -v mongodb_data:/data/db mongo:7
 
 # Verify it's running
 docker ps | grep mongodb

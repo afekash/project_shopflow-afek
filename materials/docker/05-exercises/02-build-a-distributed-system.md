@@ -488,9 +488,7 @@ worker   | 2026-02-09 10:00:00 - Database connection successful
 In another terminal:
 
 ```bash
-curl -X POST http://localhost:8000/task \
-  -H "Content-Type: application/json" \
-  -d '{"task": "process my data"}'
+curl -X POST http://localhost:8000/task -H "Content-Type: application/json" -d '{"task": "process my data"}'
 ```
 
 **Expected output:**
@@ -560,11 +558,7 @@ worker-3            worker    running
 ### Task 6.2: Submit Multiple Tasks
 
 ```bash
-for i in {1..10}; do
-  curl -X POST http://localhost:8000/task \
-    -H "Content-Type: application/json" \
-    -d "{\"task\": \"task $i\"}"
-done
+for i in {1..10}; do curl -X POST http://localhost:8000/task -H "Content-Type: application/json" -d "{\"task\": \"task $i\"}"; done
 ```
 
 ### Task 6.3: Watch All Workers Process Tasks

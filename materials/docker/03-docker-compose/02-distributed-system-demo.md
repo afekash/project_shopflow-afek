@@ -293,9 +293,7 @@ worker   | 2025-02-09 10:00:00 - INFO - Worker starting... waiting for tasks
 **2. Submit tasks:**
 ```bash
 # Submit a task
-curl -X POST http://localhost:8000/task \
-  -H "Content-Type: application/json" \
-  -d '{"data": "process this data"}'
+curl -X POST http://localhost:8000/task -H "Content-Type: application/json" -d '{"data": "process this data"}'
 
 # Output:
 # {
@@ -392,11 +390,7 @@ docker compose ps
 
 **Submit multiple tasks:**
 ```bash
-for i in {1..10}; do
-  curl -X POST http://localhost:8000/task \
-    -H "Content-Type: application/json" \
-    -d "{\"data\": \"task $i\"}"
-done
+for i in {1..10}; do curl -X POST http://localhost:8000/task -H "Content-Type: application/json" -d "{\"data\": \"task $i\"}"; done
 ```
 
 **Watch logs:**

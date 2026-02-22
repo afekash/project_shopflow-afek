@@ -103,10 +103,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 ```dockerfile
 # Good: One layer
-RUN apt-get update && apt-get install -y \
-    curl \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y curl git && rm -rf /var/lib/apt/lists/*
 
 # Bad: Three layers
 RUN apt-get update

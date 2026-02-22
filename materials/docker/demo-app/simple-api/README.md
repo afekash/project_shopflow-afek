@@ -33,9 +33,7 @@ curl http://localhost:8000
 curl http://localhost:8000/health
 
 # Create an item
-curl -X POST http://localhost:8000/items \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Docker", "description": "Container platform"}'
+curl -X POST http://localhost:8000/items -H "Content-Type: application/json" -d '{"name": "Docker", "description": "Container platform"}'
 
 # List items
 curl http://localhost:8000/items

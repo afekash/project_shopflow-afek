@@ -225,9 +225,7 @@ curl http://localhost:8000/health
 
 **3. Create an item:**
 ```bash
-curl -X POST http://localhost:8000/items \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Docker Book", "description": "Learning Docker"}'
+curl -X POST http://localhost:8000/items -H "Content-Type: application/json" -d '{"name": "Docker Book", "description": "Learning Docker"}'
 ```
 
 **Expected output:**
@@ -337,8 +335,7 @@ Modify the Dockerfile to include a health check that pings the `/health` endpoin
 
 **Hint:**
 ```dockerfile
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8000/health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 CMD curl -f http://localhost:8000/health || exit 1
 ```
 
 **Note:** You'll need to install `curl` in the image:

@@ -28,11 +28,7 @@ This downloads ~1.5GB, so it may take a few minutes.
 Choose a strong password for the `SA` (System Administrator) account. For this course, we'll use: `61eF92j4VTtl`
 
 ```bash
-docker run -e "ACCEPT_EULA=Y" \
-  -e "SA_PASSWORD=61eF92j4VTtl" \
-  -p 1433:1433 \
-  --name mssql \
-  -d mcr.microsoft.com/mssql/server:2022-latest
+docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=61eF92j4VTtl" -p 1433:1433 --name mssql -d mcr.microsoft.com/mssql/server:2022-latest
 ```
 
 **What this does:**
@@ -63,8 +59,7 @@ docker exec -it mssql mkdir /var/opt/mssql/backup
 The Northwind database is distributed as a SQL script. If you don't have it yet, download it:
 
 ```bash
-curl -L -o docker/mssql/data/instnwnd.sql \
-  https://raw.githubusercontent.com/microsoft/sql-server-samples/master/samples/databases/northwind-pubs/instnwnd.sql
+curl -L -o docker/mssql/data/instnwnd.sql https://raw.githubusercontent.com/microsoft/sql-server-samples/master/samples/databases/northwind-pubs/instnwnd.sql
 ```
 
 Copy it to the container:
@@ -78,9 +73,7 @@ docker cp docker/mssql/data/instnwnd.sql mssql:/var/opt/mssql/backup/
 First, create an empty database:
 
 ```bash
-docker exec -it mssql /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U SA -P "61eF92j4VTtl" -C \
-  -Q "CREATE DATABASE Northwind"
+docker exec -it mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P "61eF92j4VTtl" -C -Q "CREATE DATABASE Northwind"
 ```
 
 The `-C` flag trusts the server certificate (fine for local development).
@@ -104,10 +97,7 @@ In your SQL client, open the `instnwnd.sql` file and execute it against the `Nor
 Alternatively, run it from the command line:
 
 ```bash
-docker exec -it mssql /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U SA -P "61eF92j4VTtl" -C \
-  -d Northwind \
-  -i /var/opt/mssql/backup/instnwnd.sql
+docker exec -it mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P "61eF92j4VTtl" -C -d Northwind -i /var/opt/mssql/backup/instnwnd.sql
 ```
 
 ## Step 8: Verify the Installation
@@ -200,11 +190,7 @@ netstat -ano | findstr :1433
 If something else is using it, either stop that service or map to a different port:
 
 ```bash
-docker run -e "ACCEPT_EULA=Y" \
-  -e "SA_PASSWORD=61eF92j4VTtl" \
-  -p 1444:1433 \
-  --name mssql \
-  -d mcr.microsoft.com/mssql/server:2022-latest
+docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=61eF92j4VTtl" -p 1444:1433 --name mssql -d mcr.microsoft.com/mssql/server:2022-latest
 ```
 
 Then connect to `localhost,1444` instead.
@@ -233,16 +219,10 @@ docker cp docker/mssql/data/AdventureWorks2022.bak mssql:/var/opt/mssql/backup/
 docker cp docker/mssql/data/AdventureWorksDW2022.bak mssql:/var/opt/mssql/backup/
 
 # Restore OLTP database
-docker exec -it mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P "61eF92j4VTtl" -C -Q \
-"RESTORE DATABASE AdventureWorks2022 FROM DISK = '/var/opt/mssql/backup/AdventureWorks2022.bak' \
-WITH MOVE 'AdventureWorks2022' TO '/var/opt/mssql/data/AdventureWorks2022.mdf', \
-MOVE 'AdventureWorks2022_log' TO '/var/opt/mssql/data/AdventureWorks2022_log.ldf'"
+docker exec -it mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P "61eF92j4VTtl" -C -Q "RESTORE DATABASE AdventureWorks2022 FROM DISK = '/var/opt/mssql/backup/AdventureWorks2022.bak' WITH MOVE 'AdventureWorks2022' TO '/var/opt/mssql/data/AdventureWorks2022.mdf', MOVE 'AdventureWorks2022_log' TO '/var/opt/mssql/data/AdventureWorks2022_log.ldf'"
 
 # Restore Data Warehouse
-docker exec -it mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P "61eF92j4VTtl" -C -Q \
-"RESTORE DATABASE AdventureWorksDW2022 FROM DISK = '/var/opt/mssql/backup/AdventureWorksDW2022.bak' \
-WITH MOVE 'AdventureWorksDW2022' TO '/var/opt/mssql/data/AdventureWorksDW2022.mdf', \
-MOVE 'AdventureWorksDW2022_log' TO '/var/opt/mssql/data/AdventureWorksDW2022_log.ldf'"
+docker exec -it mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P "61eF92j4VTtl" -C -Q "RESTORE DATABASE AdventureWorksDW2022 FROM DISK = '/var/opt/mssql/backup/AdventureWorksDW2022.bak' WITH MOVE 'AdventureWorksDW2022' TO '/var/opt/mssql/data/AdventureWorksDW2022.mdf', MOVE 'AdventureWorksDW2022_log' TO '/var/opt/mssql/data/AdventureWorksDW2022_log.ldf'"
 ```
 
 These provide more complex schemas for advanced topics.

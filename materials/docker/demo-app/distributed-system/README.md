@@ -26,9 +26,7 @@ docker compose up --build
 ### Submit a task
 
 ```bash
-curl -X POST http://localhost:8000/task \
-  -H "Content-Type: application/json" \
-  -d '{"data": "process this data"}'
+curl -X POST http://localhost:8000/task -H "Content-Type: application/json" -d '{"data": "process this data"}'
 
 # Response:
 # {
@@ -90,11 +88,7 @@ docker compose up -d --scale worker=3
 Submit multiple tasks to see them distributed:
 
 ```bash
-for i in {1..10}; do
-  curl -X POST http://localhost:8000/task \
-    -H "Content-Type: application/json" \
-    -d "{\"data\": \"task $i\"}"
-done
+for i in {1..10}; do curl -X POST http://localhost:8000/task -H "Content-Type: application/json" -d "{\"data\": \"task $i\"}"; done
 ```
 
 Watch the workers process tasks in parallel:

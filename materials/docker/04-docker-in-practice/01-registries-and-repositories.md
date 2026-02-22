@@ -144,9 +144,7 @@ aws ecr create-repository --repository-name myapp
 
 **2. Authenticate Docker to ECR:**
 ```bash
-aws ecr get-login-password --region us-east-1 | \
-  docker login --username AWS --password-stdin \
-  123456789012.dkr.ecr.us-east-1.amazonaws.com
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 123456789012.dkr.ecr.us-east-1.amazonaws.com
 ```
 
 **3. Tag and push:**
@@ -171,9 +169,7 @@ docker push 123456789012.dkr.ecr.us-east-1.amazonaws.com/myapp:latest
 
 **1. Create a repository:**
 ```bash
-gcloud artifacts repositories create myapp \
-  --repository-format=docker \
-  --location=us-central1
+gcloud artifacts repositories create myapp --repository-format=docker --location=us-central1
 ```
 
 **2. Authenticate Docker:**
@@ -350,10 +346,7 @@ Modern applications run on diverse hardware (x86_64 servers, ARM64 cloud instanc
 docker buildx create --use
 
 # Build for multiple platforms
-docker buildx build \
-  --platform linux/amd64,linux/arm64 \
-  -t johndoe/myapp:latest \
-  --push .
+docker buildx build --platform linux/amd64,linux/arm64 -t johndoe/myapp:latest --push .
 ```
 
 Docker pushes a **manifest list** to the registry. When users pull `johndoe/myapp:latest`, Docker selects the appropriate architecture.

@@ -114,11 +114,7 @@ jobs:
           docker run --rm $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG pytest tests/unit -v
           
           # Run integration tests with test database
-          docker run --rm \
-            -e DATABASE_URL=postgresql://test:test@testdb:5432/testdb \
-            --network test-network \
-            $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-            pytest tests/integration -v
+          docker run --rm -e DATABASE_URL=postgresql://test:test@testdb:5432/testdb --network test-network $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG pytest tests/integration -v
 
       - name: Push image
         env:
@@ -130,16 +126,11 @@ jobs:
 
       - name: Deploy to ECS
         run: |
-          aws ecs update-service \
-            --cluster $ECS_CLUSTER \
-            --service $ECS_SERVICE \
-            --force-new-deployment
+          aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
 
       - name: Wait for deployment
         run: |
-          aws ecs wait services-stable \
-            --cluster $ECS_CLUSTER \
-            --services $ECS_SERVICE
+          aws ecs wait services-stable --cluster $ECS_CLUSTER --services $ECS_SERVICE
 ```
 
 **How it works:**
@@ -275,11 +266,7 @@ aws ecs update-service --cluster mycluster --service myapp --force-new-deploymen
 
 **Deploy:**
 ```bash
-gcloud run deploy myapp \
-  --image us-central1-docker.pkg.dev/PROJECT_ID/myapp/myapp:latest \
-  --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated
+gcloud run deploy myapp --image us-central1-docker.pkg.dev/PROJECT_ID/myapp/myapp:latest --platform managed --region us-central1 --allow-unauthenticated
 ```
 
 **Benefits:**
