@@ -261,4 +261,4 @@ With consistent hashing, virtual nodes smooth out imbalances probabilistically. 
 
 ---
 
-**Next:** [Partitioning Strategies →](03-partitioning-strategies.md)
+**Next:** [CAP Theorem →](../04-distributed-systems/01-cap-theorem.md)

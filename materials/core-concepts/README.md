@@ -98,8 +98,8 @@ The same concepts appear across every data technology. This matrix shows where e
 
 ### 03 — Scaling
 - [Vertical vs Horizontal Scaling](03-scaling/01-vertical-vs-horizontal.md)
-- [Consistent Hashing](03-scaling/02-consistent-hashing.md)
-- [Partitioning Strategies](03-scaling/03-partitioning-strategies.md)
+- [Partitioning Strategies](03-scaling/02-partitioning-strategies.md)
+- [Consistent Hashing](03-scaling/03-consistent-hashing.md)
 
 ### 04 — Distributed Systems
 - [CAP Theorem](04-distributed-systems/01-cap-theorem.md)

@@ -56,7 +56,7 @@ Every write command is appended to a log file. On restart, replay the log to rec
 
 When you have multiple key-value nodes, how do you decide which node stores which key? Naive approach: `node_index = hash(key) % num_nodes`. Problem: when you add or remove a node, the modulo changes and almost every key needs to move.
 
-> **Core Concept:** See [Consistent Hashing](../../core-concepts/03-scaling/02-consistent-hashing.md) for the full virtual ring mechanism, virtual nodes, and the math behind why only 1/N of keys move when a node joins or leaves.
+> **Core Concept:** See [Consistent Hashing](../../core-concepts/03-scaling/03-consistent-hashing.md) for the full virtual ring mechanism, virtual nodes, and the math behind why only 1/N of keys move when a node joins or leaves.
 
 **Why Redis Cluster chose consistent hashing:** Redis keys are completely independent -- no relationships, no joins, no foreign keys. This makes consistent hashing ideal: each key belongs to exactly one node, and cross-node operations are never needed. Compare this to a relational database where rows from different tables must be co-located for JOINs to work efficiently. Because Redis has no join requirement, adding nodes is as simple as moving some keys -- no query routing complexity.
 

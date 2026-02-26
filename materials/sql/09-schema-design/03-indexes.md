@@ -221,7 +221,7 @@ INCLUDE (UnitPrice, UnitsInStock);
 
 ## Big Data Context
 
-> **Core Concept:** See [Partitioning Strategies](../../core-concepts/03-scaling/03-partitioning-strategies.md) for range vs hash partitioning, hot spots, and rebalancing at the distributed level. See [Probabilistic Structures](../../core-concepts/02-data-structures/04-probabilistic-structures.md) for how bloom filters provide fast existence checks without scanning data.
+> **Core Concept:** See [Partitioning Strategies](../../core-concepts/03-scaling/02-partitioning-strategies.md) for range vs hash partitioning, hot spots, and rebalancing at the distributed level. See [Probabilistic Structures](../../core-concepts/02-data-structures/04-probabilistic-structures.md) for how bloom filters provide fast existence checks without scanning data.
 
 **Traditional databases:** B-tree indexes (random I/O per write, O(log n) per read)
 

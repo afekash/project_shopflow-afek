@@ -73,7 +73,7 @@ Each shard is a **MongoDB replica set** storing a subset of the data. A shard be
 
 ## The Shard Key: The Most Critical Decision
 
-> **Core Concept:** See [Partitioning Strategies](../../core-concepts/03-scaling/03-partitioning-strategies.md) for range vs hash partitioning, hot spots, skew, and rebalancing strategies.
+> **Core Concept:** See [Partitioning Strategies](../../core-concepts/03-scaling/02-partitioning-strategies.md) for range vs hash partitioning, hot spots, skew, and rebalancing strategies.
 
 **Remember table partitioning from the SQL big data context?** MongoDB applies the same idea at the cluster level -- range sharding for scan-heavy analytics workloads, hash sharding for write-heavy OLTP workloads where you want even distribution. The trade-offs are identical: range sharding enables efficient scans but risks hot spots on monotonic keys; hash sharding distributes evenly but makes range queries scatter-gather across all shards.
 
@@ -172,10 +172,9 @@ graph LR
     Mongos --> App
 ```
 
-```javascript
-// Targeted: shard key in filter → hits ONE shard
-db.events.find({ user_id: "user_42" }).explain()
-// "winningPlan": { "stage": "SINGLE_SHARD" }
+```python
+plan = db.events.find({"user_id": "user_42"}).explain()
+print(plan["queryPlanner"]["winningPlan"]["stage"])  # "SINGLE_SHARD"
 ```
 
 ### Scatter-Gather Query (Slow)
@@ -192,11 +191,10 @@ graph LR
     Mongos -->|"Merge, sort, return"| App
 ```
 
-```javascript
-// Scatter-gather: no shard key → hits ALL shards
-db.events.find({ status: "active" }).explain()
-// "winningPlan": { "stage": "SHARD_MERGE" }
-// Touches every shard, merges results in mongos
+```python
+plan = db.events.find({"status": "active"}).explain()
+print(plan["queryPlanner"]["winningPlan"]["stage"])  # "SHARD_MERGE"
+# Touches every shard, merges results in mongos
 ```
 
 Scatter-gather is not always avoidable -- but it should not be your frequent query pattern. Design your shard key around your most frequent queries.
@@ -224,16 +222,18 @@ graph TD
 - Can be manually paused for maintenance windows
 - Each migration is transparent to the application -- during migration, writes go to the source shard and are forwarded to the destination
 
-```javascript
-// Check balancer status
-sh.getBalancerState()    // true = enabled
+```python
+# Check if balancer is enabled
+balancer_cfg = client["config"].settings.find_one({"_id": "balancer"}) or {}
+print("Balancer enabled:", not balancer_cfg.get("stopped", False))
 
-// Check if balancer is currently running
-sh.isBalancerRunning()
+# Check if balancer is currently running
+status = client.admin.command("balancerStatus")
+print("Balancer running:", status.get("inBalancerRound", False))
 
-// Pause balancer (for maintenance)
-sh.stopBalancer()
-sh.startBalancer()
+# Pause balancer (for maintenance)
+client.admin.command("balancerStop")
+client.admin.command("balancerStart")
 ```
 
 ## Zone Sharding
@@ -243,22 +243,25 @@ Zones allow you to pin specific ranges of the shard key to specific shards. Used
 - **Tiered storage**: Hot data on SSD shards, cold data on HDD shards
 - **Tenant isolation**: Each enterprise customer has a dedicated shard
 
-```javascript
-// Example: geographic zone sharding
-sh.addShardTag("shard1", "EU")
-sh.addShardTag("shard2", "US")
+```python
+from bson import MinKey, MaxKey
 
-sh.addTagRange(
-  "mydb.users",
-  { region: "EU", user_id: MinKey },
-  { region: "EU", user_id: MaxKey },
-  "EU"
+# Tag shards with zone names
+client.admin.command("addShardToZone", shard="shard1", zone="EU")
+client.admin.command("addShardToZone", shard="shard2", zone="US")
+
+# Pin key ranges to zones
+client.admin.command("updateZoneKeyRange",
+    ns="mydb.users",
+    min={"region": "EU", "user_id": MinKey()},
+    max={"region": "EU", "user_id": MaxKey()},
+    zone="EU",
 )
-sh.addTagRange(
-  "mydb.users",
-  { region: "US", user_id: MinKey },
-  { region: "US", user_id: MaxKey },
-  "US"
+client.admin.command("updateZoneKeyRange",
+    ns="mydb.users",
+    min={"region": "US", "user_id": MinKey()},
+    max={"region": "US", "user_id": MaxKey()},
+    zone="US",
 )
 ```
 

@@ -21,6 +21,25 @@ Port mapping (host → container):
 
 ## Quick Start
 
+### Step 1 — Add hostnames to your hosts file
+
+The replica set members advertise themselves as `mongo1`, `mongo2`, `mongo3` (Docker container names). Your machine needs to resolve those names to `127.0.0.1` so PyMongo can reach them after RS discovery.
+
+**macOS / Linux:**
+```bash
+sudo sh -c 'echo "127.0.0.1 mongo1 mongo2 mongo3" >> /etc/hosts'
+```
+
+**Windows (WSL recommended):**
+Running Docker Desktop with WSL 2 is the easiest path — open your WSL terminal and run the same command as Linux above. It will apply inside WSL where Python runs.
+
+If you are running Python natively on Windows (not in WSL), open Notepad **as Administrator**, edit `C:\Windows\System32\drivers\etc\hosts`, and add:
+```
+127.0.0.1 mongo1 mongo2 mongo3
+```
+
+### Step 2 — Start and initialise the replica set
+
 ```bash
 # Start all 3 nodes
 docker compose up -d

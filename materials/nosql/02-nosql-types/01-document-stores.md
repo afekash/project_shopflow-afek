@@ -87,7 +87,7 @@ Most document stores support replication: multiple nodes hold copies of the same
 
 ### Sharding (Horizontal Write Scaling)
 
-> **Core Concept:** See [Partitioning Strategies](../../core-concepts/03-scaling/03-partitioning-strategies.md) for range vs hash partitioning and how to choose a partition key.
+> **Core Concept:** See [Partitioning Strategies](../../core-concepts/03-scaling/02-partitioning-strategies.md) for range vs hash partitioning and how to choose a partition key.
 
 When a single node can no longer handle write throughput or data volume, the collection is **sharded** — partitioned across multiple machines using a **shard key**. Each shard holds a subset of the documents. The shard key choice is critical: a poor choice leads to hotspots (all writes going to one shard).
 

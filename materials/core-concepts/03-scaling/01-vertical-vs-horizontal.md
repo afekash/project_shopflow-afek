@@ -68,7 +68,7 @@ Before:              After:
 - **Geographic distribution**: Nodes can be placed in different data centers or regions.
 
 **Limitations:**
-- **Distributed systems complexity**: Data must be partitioned across nodes. Queries that touch data on multiple nodes are expensive (see [Partitioning Strategies](03-partitioning-strategies.md)).
+- **Distributed systems complexity**: Data must be partitioned across nodes. Queries that touch data on multiple nodes are expensive (see [Partitioning Strategies](02-partitioning-strategies.md)).
 - **Consistency trade-offs**: When data is on multiple nodes, ensuring all nodes agree on the current state requires coordination -- see [CAP Theorem](../04-distributed-systems/01-cap-theorem.md).
 - **Network becomes critical**: Nodes communicate over the network. Network latency and failures become a primary concern.
 - **Operational complexity**: Many nodes = many things to monitor, configure, and upgrade.
@@ -125,10 +125,10 @@ The crossover point depends on what you're measuring. In raw hardware cost, comm
 
 - **Relational databases**: Primarily vertical; horizontal sharding is possible but complex and usually avoided until necessary
 - **NoSQL databases**: Designed ground-up for horizontal scaling -- adding nodes is a first-class operation, not an afterthought
-- **Caching layers**: Horizontal via [Consistent Hashing](02-consistent-hashing.md) across cache nodes
+- **Caching layers**: Horizontal via [Consistent Hashing](03-consistent-hashing.md) across cache nodes
 - **Cloud auto-scaling**: Cloud providers automate both strategies -- vertical (instance resize) and horizontal (add instances) based on load
-- **Replication vs Sharding**: Replication (multiple copies of the same data) scales reads; sharding (different data on different nodes) scales writes and storage -- see [Replication Patterns](../05-replication-and-availability/01-replication-patterns.md) and [Partitioning Strategies](03-partitioning-strategies.md)
+- **Replication vs Sharding**: Replication (multiple copies of the same data) scales reads; sharding (different data on different nodes) scales writes and storage -- see [Replication Patterns](../05-replication-and-availability/01-replication-patterns.md) and [Partitioning Strategies](02-partitioning-strategies.md)
 
 ---
 
-**Next:** [Consistent Hashing →](02-consistent-hashing.md)
+**Next:** [Partitioning Strategies →](02-partitioning-strategies.md)

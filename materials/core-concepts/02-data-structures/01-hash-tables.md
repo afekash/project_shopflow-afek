@@ -142,7 +142,7 @@ Worst case is theoretical -- a good hash function makes it negligible. The amort
 - **Database buffer pools**: Pages are cached in memory using a hash table keyed on page ID
 - **JOIN algorithms**: Hash join builds a hash table of the smaller relation, then probes it for each row of the larger relation -- O(n + m) vs O(n × m) for nested loops
 - **Aggregate operations**: `GROUP BY` implementations build hash tables where the key is the grouping column(s) and the value is the accumulator
-- **Distributed hash tables (DHT)**: Consistent hashing extends this concept across nodes -- see [Consistent Hashing](../03-scaling/02-consistent-hashing.md)
+- **Distributed hash tables (DHT)**: Consistent hashing extends this concept across nodes -- see [Consistent Hashing](../03-scaling/03-consistent-hashing.md)
 - **Sets and membership testing**: Set operations (`contains`, `union`, `intersect`) are all O(1) per element using hash tables
 
 ---

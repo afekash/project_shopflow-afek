@@ -24,7 +24,7 @@ Key concepts you'll encounter in this course:
 | Columnar storage, SELECT * cost | [I/O and Storage Fundamentals](../core-concepts/01-complexity-and-performance/02-io-and-storage-fundamentals.md) |
 | Clustered/nonclustered indexes, B-trees | [Trees for Storage](../core-concepts/02-data-structures/02-trees-for-storage.md) |
 | Bloom filters (WHERE, joins) | [Probabilistic Structures](../core-concepts/02-data-structures/04-probabilistic-structures.md) |
-| Table partitioning, zone maps | [Partitioning Strategies](../core-concepts/03-scaling/03-partitioning-strategies.md) |
+| Table partitioning, zone maps | [Partitioning Strategies](../core-concepts/03-scaling/02-partitioning-strategies.md) |
 | ACID properties, transactions | [ACID vs BASE](../core-concepts/04-distributed-systems/02-acid-vs-base.md) |
 | Isolation levels | [Consistency Models](../core-concepts/04-distributed-systems/03-consistency-models.md) |
 | WAL, Delta Lake / Iceberg transactions | [Write-Ahead Logs](../core-concepts/05-replication-and-availability/03-write-ahead-logs.md) |

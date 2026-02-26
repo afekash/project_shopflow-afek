@@ -8,8 +8,33 @@
 
 set -e
 
-echo "Waiting for all MongoDB nodes to start..."
-sleep 15
+# Wait until a container's mongod is accepting connections
+wait_for_mongo() {
+  local container=$1
+  local max_attempts=30
+  local attempt=0
+  echo "  Waiting for $container..."
+  until docker exec "$container" mongosh --eval "db.runCommand({ ping: 1 })" --quiet &>/dev/null; do
+    attempt=$((attempt + 1))
+    if [ $attempt -ge $max_attempts ]; then
+      echo "ERROR: $container did not become ready in time." >&2
+      exit 1
+    fi
+    sleep 2
+  done
+  echo "  $container is ready."
+}
+
+echo "Waiting for config servers and shard nodes to start..."
+wait_for_mongo cfg1
+wait_for_mongo cfg2
+wait_for_mongo cfg3
+wait_for_mongo shard1a
+wait_for_mongo shard1b
+wait_for_mongo shard1c
+wait_for_mongo shard2a
+wait_for_mongo shard2b
+wait_for_mongo shard2c
 
 # ─── Step 1: Initialize Config Server Replica Set ───────────────────────────
 echo ""
@@ -55,7 +80,12 @@ rs.initiate({
   ]
 })
 "
-sleep 10
+
+# mongos depends on configrs being initialized — wait for it now
+echo ""
+echo "  Waiting for mongos (needs configrs to be ready)..."
+wait_for_mongo mongos
+sleep 5
 
 # ─── Step 4: Add Shards to the Cluster via mongos ───────────────────────────
 echo ""

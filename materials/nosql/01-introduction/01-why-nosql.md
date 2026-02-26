@@ -10,12 +10,14 @@ But around 2005–2010, something changed.
 
 The explosion of social media, mobile applications, and the internet of things created data challenges that relational databases were never designed to handle:
 
-| Challenge | Example | Problem |
-|-----------|---------|---------|
-| **Scale** | Facebook: 3 billion users | A single PostgreSQL server can't store all of it |
-| **Velocity** | Twitter: 500K tweets/minute | Write throughput saturates single-node disk I/O |
-| **Variety** | User profiles with different fields | Rigid schemas require migrations for every change |
-| **Volume** | IoT sensors: millions of events/second | Relational row storage is not efficient for time-series |
+
+| Challenge    | Example                                | Problem                                                 |
+| ------------ | -------------------------------------- | ------------------------------------------------------- |
+| **Scale**    | Facebook: 3 billion users              | A single PostgreSQL server can't store all of it        |
+| **Velocity** | Twitter: 500K tweets/minute            | Write throughput saturates single-node disk I/O         |
+| **Variety**  | User profiles with different fields    | Rigid schemas require migrations for every change       |
+| **Volume**   | IoT sensors: millions of events/second | Relational row storage is not efficient for time-series |
+
 
 Companies like Google, Amazon, Facebook, and LinkedIn hit these walls first. Their solutions became the open-source databases we now call "NoSQL."
 
@@ -74,13 +76,15 @@ NoSQL databases sidestep this by designing data models that avoid joins: data th
 
 NoSQL databases don't share a single design. They are a family of databases that make different trade-offs:
 
-| Property | Relational | NoSQL |
-|----------|------------|-------|
-| **Schema** | Fixed, enforced upfront | Flexible, enforced by application |
-| **Scaling** | Primarily vertical | Primarily horizontal |
-| **Joins** | First-class, efficient | Avoided or approximated |
-| **Consistency** | ACID by default | Trade-offs exposed to developer |
-| **Data model** | Tables and rows | Documents, key-value, columns, graphs |
+
+| Property        | Relational              | NoSQL                                 |
+| --------------- | ----------------------- | ------------------------------------- |
+| **Schema**      | Fixed, enforced upfront | Flexible, enforced by application     |
+| **Scaling**     | Primarily vertical      | Primarily horizontal                  |
+| **Joins**       | First-class, efficient  | Avoided or approximated               |
+| **Consistency** | ACID by default         | Trade-offs exposed to developer       |
+| **Data model**  | Tables and rows         | Documents, key-value, columns, graphs |
+
 
 ### Four Major Paradigms
 
@@ -124,18 +128,6 @@ NoSQL is not automatically better. Choose based on your actual needs:
 ## Connecting to What You Know
 
 You already know SQL from the [SQL module](../../sql/README.md). Here is how concepts map:
-
-| SQL Concept | NoSQL Analog |
-|-------------|-------------|
-| Database | Database |
-| Table | Collection (documents) / Keyspace (Cassandra) |
-| Row | Document / Item / Node |
-| Column | Field / Attribute / Property |
-| Primary key | `_id` / partition key |
-| Foreign key | Embedded document or reference |
-| JOIN | Avoided -- embed related data |
-| INDEX | Index (similar concept, different implementations) |
-| ACID transaction | Write concern / consistency level (tunable) |
 
 ## At Scale
 

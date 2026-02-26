@@ -11,7 +11,7 @@ services:
     networks:
       - mongo-net
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh --quiet
+      test: echo 'db.runCommand("ping").ok' | mongosh --port 27017 --quiet
       interval: 10s
       timeout: 5s
       retries: 5
@@ -22,14 +22,14 @@ services:
     container_name: mongo2
     hostname: mongo2
     ports:
-      - "27018:27017"
-    command: mongod --replSet rs0 --bind_ip_all --port 27017
+      - "27018:27018"
+    command: mongod --replSet rs0 --bind_ip_all --port 27018
     volumes:
       - mongo2_data:/data/db
     networks:
       - mongo-net
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh --quiet
+      test: echo 'db.runCommand("ping").ok' | mongosh --port 27018 --quiet
       interval: 10s
       timeout: 5s
       retries: 5
@@ -40,14 +40,14 @@ services:
     container_name: mongo3
     hostname: mongo3
     ports:
-      - "27019:27017"
-    command: mongod --replSet rs0 --bind_ip_all --port 27017
+      - "27019:27019"
+    command: mongod --replSet rs0 --bind_ip_all --port 27019
     volumes:
       - mongo3_data:/data/db
     networks:
       - mongo-net
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh --quiet
+      test: echo 'db.runCommand("ping").ok' | mongosh --port 27019 --quiet
       interval: 10s
       timeout: 5s
       retries: 5

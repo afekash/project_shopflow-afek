@@ -81,6 +81,10 @@ target/
 # Jupytext-generated notebooks (source of truth is .md files)
 materials/**/*.ipynb
 
+# Project lesson solutions and instructor notes (not committed until after class)
+materials/project/*/solution/
+materials/project/INSTRUCTOR-NOTES.md
+
 # SQLite database
 *.db
 

@@ -23,13 +23,13 @@ Key concepts that appear frequently in this module:
 | When you see... | The core concept is... |
 |-----------------|----------------------|
 | LSM-trees, SSTables, commit log | [LSM-Trees and SSTables](../core-concepts/02-data-structures/03-lsm-trees-and-sstables.md) |
-| Consistent hashing, token ring | [Consistent Hashing](../core-concepts/03-scaling/02-consistent-hashing.md) |
+| Consistent hashing, token ring | [Consistent Hashing](../core-concepts/03-scaling/03-consistent-hashing.md) |
 | CAP theorem, CP vs AP | [CAP Theorem](../core-concepts/04-distributed-systems/01-cap-theorem.md) |
 | ACID vs BASE | [ACID vs BASE](../core-concepts/04-distributed-systems/02-acid-vs-base.md) |
 | Quorum, consistency levels | [Quorum and Tunable Consistency](../core-concepts/04-distributed-systems/04-quorum-and-tunable-consistency.md) |
 | Replica sets, replication | [Replication Patterns](../core-concepts/05-replication-and-availability/01-replication-patterns.md) |
 | Elections, failover | [Consensus and Failover](../core-concepts/05-replication-and-availability/02-consensus-and-failover.md) |
-| Sharding, shard keys | [Partitioning Strategies](../core-concepts/03-scaling/03-partitioning-strategies.md) |
+| Sharding, shard keys | [Partitioning Strategies](../core-concepts/03-scaling/02-partitioning-strategies.md) |
 | Targeted vs scatter-gather queries | [Query Routing Patterns](../core-concepts/06-architecture-patterns/02-query-routing-patterns.md) |
 
 ## Learning Path

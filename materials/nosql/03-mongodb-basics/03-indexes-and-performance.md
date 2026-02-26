@@ -22,14 +22,14 @@ The B-tree stores index key values in sorted order, enabling:
 
 ```mermaid
 graph TD
-    Query["Query: price > 500"] --> IndexScan["Index Scan\nB-tree on 'price'"]
-    IndexScan --> Locate["Locate first entry > 500\nO(log n)"]
-    Locate --> Traverse["Traverse remaining entries\n(sequential, fast)"]
-    Traverse --> DocFetch["Fetch matching documents\nby _id reference"]
+    Query["Query: price > 500"] --> IndexScan["Index Scan B-tree on 'price'"]
+    IndexScan --> Locate["Locate first entry > 500 O(log n)"]
+    Locate --> Traverse["Traverse remaining entries (sequential, fast)"]
+    Traverse --> DocFetch["Fetch matching documents by _id reference"]
     DocFetch --> Result["Return results"]
     
-    Query2["Query: price > 500 (no index)"] --> CollScan["Collection Scan\nExamine ALL documents"]
-    CollScan --> Result2["Return results\n(read entire collection)"]
+    Query2["Query: price > 500 (no index)"] --> CollScan["Collection Scan Examine ALL documents"]
+    CollScan --> Result2["Return results (read entire collection)"]
 ```
 
 ## Index Types

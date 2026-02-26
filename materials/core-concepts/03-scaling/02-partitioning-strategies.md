@@ -67,7 +67,7 @@ user_id=1004: hash(1004) = 8731 % 4 = 1 → Partition 1 → Node D
 **What makes it good:**
 - Even distribution: hash functions spread keys uniformly, eliminating hot spots from sequential keys
 - Write load is balanced across all nodes
-- Adding a node with consistent hashing moves only ~1/N of keys (see [Consistent Hashing](02-consistent-hashing.md))
+- Adding a node with consistent hashing moves only ~1/N of keys (see [Consistent Hashing](03-consistent-hashing.md))
 
 **What makes it dangerous:**
 - **Range queries are scatter-gather**: Records with consecutive user IDs land on different nodes. `WHERE user_id BETWEEN 1000 AND 5000` must query all partitions and merge results.
@@ -163,4 +163,4 @@ Read: query all 10, merge (take latest timestamp)
 
 ---
 
-**Next:** [CAP Theorem →](../04-distributed-systems/01-cap-theorem.md)
+**Next:** [Consistent Hashing →](03-consistent-hashing.md)

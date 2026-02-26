@@ -67,17 +67,24 @@ If secondary is behind: it reads from T1. If it just restarted: it reads from wh
 
 **Oplog size**: Configurable, default ~5% of free disk space (minimum 990MB). If a secondary falls so far behind that the primary's oplog has rolled over, the secondary cannot catch up and enters a `RECOVERING` state -- it needs to be re-synced from scratch.
 
-```javascript
-// Inspect the oplog in mongosh
-use local
-db.oplog.rs.find().sort({ $natural: -1 }).limit(5).pretty()
+```python
+import pprint
+from pymongo import MongoClient
 
-// Check oplog window (how far back it goes)
-rs.printReplicationInfo()
-// Output: configured oplog size:   1024 MB
-//         log length start to end: 4 hrs 23 min
-//         oplog first event time:  Thu Feb 20 2024 ...
-//         oplog last event time:   Thu Feb 20 2024 ...
+client = MongoClient("mongodb://mongo1:27017,mongo2:27018,mongo3:27019/?replicaSet=rs0")
+oplog = client.local["oplog.rs"]
+
+# Inspect the 5 most recent oplog entries
+for entry in oplog.find().sort("$natural", -1).limit(5):
+    pprint.pprint({k: entry[k] for k in ("op", "ns", "o") if k in entry})
+
+# Check oplog window (how far back it goes)
+first = oplog.find_one(sort=[("$natural", 1)])
+last  = oplog.find_one(sort=[("$natural", -1)])
+window = last["ts"].as_datetime() - first["ts"].as_datetime()
+print(f"Oplog window: {window}")
+# Output: configured oplog size: ~1024 MB
+#         Oplog window: 4:23:00
 ```
 
 ## Elections: Choosing a New Primary

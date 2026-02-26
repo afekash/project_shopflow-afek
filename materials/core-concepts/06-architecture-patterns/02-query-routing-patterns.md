@@ -2,7 +2,7 @@
 
 ## The Problem
 
-Data is spread across multiple nodes or partitions (see [Partitioning Strategies](../03-scaling/03-partitioning-strategies.md)). A query arrives. How does the system find the relevant data without asking every node?
+Data is spread across multiple nodes or partitions (see [Partitioning Strategies](../03-scaling/02-partitioning-strategies.md)). A query arrives. How does the system find the relevant data without asking every node?
 
 Asking all nodes for every query -- **scatter-gather** -- works but costs grow linearly with cluster size. A 100-node cluster queried by scatter-gather requires 100x the network and compute resources vs. a query that goes to one node. At petabyte scale, the difference between routing a query to 1 node vs. 1,000 nodes is the difference between a 50ms query and a 50-second query.
 

@@ -121,7 +121,7 @@ In column-family stores, **denormalization is intentional** -- you duplicate dat
 
 Cassandra uses a **peer-to-peer architecture** with no single master (unlike MongoDB's replica set with a primary). Every node can accept reads and writes.
 
-> **Core Concept:** See [Consistent Hashing](../../core-concepts/03-scaling/02-consistent-hashing.md) for how the virtual ring works and why adding nodes moves only 1/N of keys.
+> **Core Concept:** See [Consistent Hashing](../../core-concepts/03-scaling/03-consistent-hashing.md) for how the virtual ring works and why adding nodes moves only 1/N of keys.
 
 > **Core Concept:** See [Replication Patterns](../../core-concepts/05-replication-and-availability/01-replication-patterns.md) for the comparison between peer-to-peer and primary-secondary approaches.
 
