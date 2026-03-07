@@ -53,6 +53,10 @@ project:
             - file: materials/core-concepts/06-architecture-patterns/01-schema-strategies.md
             - file: materials/core-concepts/06-architecture-patterns/02-query-routing-patterns.md
             - file: materials/core-concepts/06-architecture-patterns/03-polyglot-persistence.md
+        - title: Application Patterns
+          children:
+            - file: materials/core-concepts/07-application-patterns/01-caching-patterns.md
+            - file: materials/core-concepts/07-application-patterns/02-pubsub-and-messaging.md
 
     - file: materials/git/README.md
       children:
@@ -173,23 +177,34 @@ project:
             - file: materials/nosql/02-nosql-types/03-column-family-stores.md
             - file: materials/nosql/02-nosql-types/04-graph-databases.md
             - file: materials/nosql/02-nosql-types/05-choosing-the-right-database.md
-        - title: MongoDB Basics
+        - title: Document Store Deep Dive (MongoDB)
           children:
-            - file: materials/nosql/03-mongodb-basics/01-mongodb-overview.md
-            - file: materials/nosql/03-mongodb-basics/02-documents-and-data-modeling.md
-            - file: materials/nosql/03-mongodb-basics/03-indexes-and-performance.md
-        - title: Replication
-          children:
-            - file: materials/nosql/04-mongodb-replication/01-replica-set-architecture.md
-            - file: materials/nosql/04-mongodb-replication/02-hands-on-replica-set.md
-        - title: Sharding
-          children:
-            - file: materials/nosql/05-mongodb-sharding/01-sharding-architecture.md
-            - file: materials/nosql/05-mongodb-sharding/02-hands-on-sharded-cluster.md
+            - title: Basics
+              children:
+                - file: materials/nosql/03-mongodb-basics/01-mongodb-overview.md
+                - file: materials/nosql/03-mongodb-basics/02-documents-and-data-modeling.md
+                - file: materials/nosql/03-mongodb-basics/03-indexes-and-performance.md
+            - title: Replication
+              children:
+                - file: materials/nosql/04-mongodb-replication/01-replica-set-architecture.md
+                - file: materials/nosql/04-mongodb-replication/02-hands-on-replica-set.md
+            - title: Sharding
+              children:
+                - file: materials/nosql/05-mongodb-sharding/01-sharding-architecture.md
+                - file: materials/nosql/05-mongodb-sharding/02-hands-on-sharded-cluster.md
         - title: Exercises
           children:
             - file: materials/nosql/06-exercises/01-nosql-theory-exercises.md
             - file: materials/nosql/06-exercises/02-mongodb-exercises.md
+        - title: Key-Value Deep Dive
+          children:
+            - file: materials/nosql/07-key-value-deep-dive/01-kv-concepts-and-tradeoffs.md
+            - file: materials/nosql/07-key-value-deep-dive/02-value-types-and-key-design.md
+            - file: materials/nosql/07-key-value-deep-dive/03-common-patterns.md
+            - file: materials/nosql/07-key-value-deep-dive/04-caching-and-expiration.md
+            - file: materials/nosql/07-key-value-deep-dive/05-cache-write-patterns.md
+            - file: materials/nosql/07-key-value-deep-dive/06-replication.md
+            - file: materials/nosql/07-key-value-deep-dive/07-sharding.md
 
     - file: materials/docker/README.md
       children:

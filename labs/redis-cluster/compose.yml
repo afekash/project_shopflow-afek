@@ -1,0 +1,125 @@
+# Redis Cluster lab: 6 nodes (3 primaries + 3 replicas).
+# Backs materials/nosql/07-key-value-deep-dive/05-sharding.md
+# Merges with labs/base/compose.yml -- do not duplicate the workspace service here.
+#
+# After starting, run: make redis-cluster-init
+#
+# Usage: make lab-redis-cluster
+
+services:
+  workspace:
+    build:
+      args:
+        LAB: redis-cluster
+    environment:
+      - REDIS_CLUSTER_HOST=redis-node-1
+      - REDIS_CLUSTER_PORT=6380
+    depends_on:
+      redis-node-1:
+        condition: service_healthy
+      redis-node-2:
+        condition: service_healthy
+      redis-node-3:
+        condition: service_healthy
+      redis-node-4:
+        condition: service_healthy
+      redis-node-5:
+        condition: service_healthy
+      redis-node-6:
+        condition: service_healthy
+
+  redis-node-1:
+    image: redis:7-alpine
+    command: >
+      redis-server
+      --port 6380
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6380", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis-node-2:
+    image: redis:7-alpine
+    command: >
+      redis-server
+      --port 6380
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6380", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis-node-3:
+    image: redis:7-alpine
+    command: >
+      redis-server
+      --port 6380
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6380", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis-node-4:
+    image: redis:7-alpine
+    command: >
+      redis-server
+      --port 6380
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6380", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis-node-5:
+    image: redis:7-alpine
+    command: >
+      redis-server
+      --port 6380
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6380", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis-node-6:
+    image: redis:7-alpine
+    command: >
+      redis-server
+      --port 6380
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6380", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped

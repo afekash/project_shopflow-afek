@@ -1,0 +1,28 @@
+# Single Redis instance lab.
+# Backs materials/nosql/07-key-value-deep-dive/ lessons 01-03.
+# Merges with labs/base/compose.yml -- do not duplicate the workspace service here.
+#
+# Usage: make lab-redis
+
+services:
+  workspace:
+    build:
+      args:
+        LAB: redis
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped

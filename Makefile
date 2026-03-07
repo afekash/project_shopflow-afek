@@ -13,8 +13,9 @@
 # ────────────────────────────────────────────────────────────────────────────
 
 .PHONY: docs lab-orm lab-sql lab-nosql lab-replica-set lab-sharded lab-distributed lab-web \
+        lab-redis lab-redis-sentinel lab-redis-cluster \
         down reset shell convert \
-        replica-set-init sharded-init sql-restore \
+        replica-set-init sharded-init sql-restore redis-cluster-init \
         help
 
 BASE := -f labs/base/compose.yml
@@ -31,6 +32,9 @@ help:
 	@echo "  make lab-sharded          Start workspace + MongoDB sharded cluster"
 	@echo "  make lab-distributed      Start workspace + gateway + worker + Redis"
 	@echo "  make lab-web              Start workspace with FastAPI deps (Web APIs lesson)"
+	@echo "  make lab-redis            Start workspace + single Redis (KV lessons 01-03)"
+	@echo "  make lab-redis-sentinel   Start workspace + Redis primary/replicas + Sentinel (KV lesson 04)"
+	@echo "  make lab-redis-cluster    Start workspace + 6-node Redis Cluster (KV lesson 05)"
 	@echo ""
 	@echo "  make down                 Stop the running lab"
 	@echo "  make reset                Stop + remove all containers and volumes"
@@ -38,6 +42,7 @@ help:
 	@echo ""
 	@echo "  make replica-set-init     Initialize MongoDB replica set (after lab-replica-set)"
 	@echo "  make sharded-init         Initialize MongoDB sharded cluster (after lab-sharded)"
+	@echo "  make redis-cluster-init   Initialize Redis Cluster (after lab-redis-cluster)"
 	@echo "  make sql-restore          Restore AdventureWorks/Northwind databases (after lab-sql)"
 	@echo ""
 	@echo "  make convert FILE=path    Convert a MyST lesson to py:percent (instructor only)"
@@ -92,6 +97,24 @@ lab-web:
 	docker compose $(BASE) -f labs/web/compose.yml up -d --build
 	@echo "MyST docs: http://localhost:3000"
 
+lab-redis:
+	docker compose $(BASE) -f labs/redis/compose.yml up -d --build
+	@echo "Redis available at localhost:6379"
+	@echo "MyST docs: http://localhost:3000"
+
+lab-redis-sentinel:
+	docker compose $(BASE) -f labs/redis-sentinel/compose.yml up -d --build
+	@echo "Redis primary:   redis-primary:6379"
+	@echo "Redis sentinels: redis-sentinel-1:26379 (quorum of 3)"
+	@echo "MyST docs:       http://localhost:3000"
+
+lab-redis-cluster:
+	docker compose $(BASE) -f labs/redis-cluster/compose.yml up -d --build
+	@echo "Waiting for cluster nodes to start..."
+	sleep 8
+	$(MAKE) redis-cluster-init
+	@echo "MyST docs: http://localhost:3000"
+
 # ─── Common operations ──────────────────────────────────────────────────────
 
 down:
@@ -121,6 +144,9 @@ sharded-init:
 
 sql-restore:
 	bash labs/sql/restore.sh
+
+redis-cluster-init:
+	bash labs/redis-cluster/init.sh
 
 # ─── Instructor convenience ──────────────────────────────────────────────────
 

@@ -52,6 +52,10 @@ The concepts build on each other. If you're reading this fresh, follow this orde
   ├── Schema Strategies                 ← needs all of 01-04
   ├── Query Routing Patterns            ← needs Partitioning Strategies
   └── Polyglot Persistence              ← needs all of 01-06 (capstone)
+
+07-application-patterns
+  ├── Caching Patterns                  ← needs Hash Tables + I/O Fundamentals
+  └── Pub/Sub and Messaging             ← needs I/O Fundamentals
 ```
 
 ---
@@ -81,6 +85,8 @@ The same concepts appear across every data technology. This matrix shows where e
 | **Schema Strategies** | Schema-on-write (DDL enforced); normalized (3NF common), star schema for analytics | Schema-on-read (flexible documents); denormalized (embed related data) | Schema-on-write for column families; heavily denormalized per query | Schema-free (values are opaque bytes) | Schema-on-write with Avro/Protobuf/JSON Schema registry | Schema-on-read (infer from data) or schema-on-write (DDL) |
 | **Query Routing** | No routing (single node); with Citus: coordinator routes | mongos routes targeted vs scatter-gather based on shard key | Coordinator routes targeted or scatter-gather by partition key | Client-side routing via hash slots | Producer routes by key; consumer group manages partition assignment | Spark planner decides: broadcast vs shuffle join |
 | **Polyglot Persistence** | Often the "primary store of truth" in polyglot architectures | Often the flexible secondary store for heterogeneous data | Time-series / write-heavy workloads in polyglot setup | Cache layer and session store in polyglot setup | Event backbone / message bus connecting stores | Analytics computation layer over multiple storage backends |
+| **Caching Patterns** | Not applicable (persistent store) | Not applicable (persistent store) | Not applicable (persistent store) | Core use case -- cache-aside, write-through, TTL, eviction policies | Not applicable | Not applicable |
+| **Pub/Sub Patterns** | LISTEN/NOTIFY (basic pub/sub) | Change streams (event-driven consumers) | Not built-in | Built-in pub/sub (fire-and-forget) + Streams (durable, consumer groups) | Core model -- topics, consumer groups, at-least-once delivery | Not applicable |
 
 ---
 
@@ -116,3 +122,7 @@ The same concepts appear across every data technology. This matrix shows where e
 - [Schema Strategies](06-architecture-patterns/01-schema-strategies.md)
 - [Query Routing Patterns](06-architecture-patterns/02-query-routing-patterns.md)
 - [Polyglot Persistence](06-architecture-patterns/03-polyglot-persistence.md)
+
+### 07 — Application Patterns
+- [Caching Patterns](07-application-patterns/01-caching-patterns.md)
+- [Pub/Sub and Messaging](07-application-patterns/02-pubsub-and-messaging.md)
