@@ -1,6 +1,6 @@
 # NoSQL Databases
 
-Welcome to the NoSQL module! This course covers the motivations behind NoSQL, the major database paradigms (document, key-value, column-family, graph), and hands-on deep dives into two representative examples: **document stores** (using MongoDB) and **key-value stores** (using Redis). Each deep dive includes replication and sharding with real multi-node Docker clusters.
+Welcome to the NoSQL module! This course covers the motivations behind NoSQL, the major database paradigms (document, key-value, column-family, graph), and hands-on deep dives into three representative examples: **document stores** (MongoDB), **key-value stores** (Redis), and **graph stores** (Neo4j). Each deep dive includes replication and sharding with real multi-node Docker clusters.
 
 ## Prerequisites
 
@@ -33,6 +33,8 @@ Key concepts that appear frequently in this module:
 | Targeted vs scatter-gather queries | [Query Routing Patterns](../core-concepts/06-architecture-patterns/02-query-routing-patterns.md) |
 | Cache-aside, write-through, eviction | [Caching Patterns](../core-concepts/07-application-patterns/01-caching-patterns.md) |
 | Pub/sub, fan-out, consumer groups | [Pub/Sub and Messaging Patterns](../core-concepts/07-application-patterns/02-pubsub-and-messaging.md) |
+| Nodes, edges, graph traversal, BFS/DFS | [Graphs and Traversal](../core-concepts/02-data-structures/05-graphs-and-traversal.md) |
+| Graph partitioning, edge-cut, vertex-cut | [Graph Partitioning](../core-concepts/03-scaling/04-graph-partitioning.md) |
 
 ## Learning Path
 
@@ -43,14 +45,16 @@ Key concepts that appear frequently in this module:
 | **03 - Document Store (MongoDB)** | Basics: [Overview & Setup](03-mongodb-basics/01-mongodb-overview.md), [Data Modeling](03-mongodb-basics/02-documents-and-data-modeling.md), [Indexes & Performance](03-mongodb-basics/03-indexes-and-performance.md). Replication: [Replica Set Architecture](04-mongodb-replication/01-replica-set-architecture.md), [Hands-On Replica Set](04-mongodb-replication/02-hands-on-replica-set.md). Sharding: [Sharding Architecture](05-mongodb-sharding/01-sharding-architecture.md), [Hands-On Sharded Cluster](05-mongodb-sharding/02-hands-on-sharded-cluster.md) | ~180 min |
 | **06 - Exercises** | [Theory Exercises](06-exercises/01-nosql-theory-exercises.md), [Document-store challenges](06-exercises/02-mongodb-exercises.md) | ~30 min |
 | **07 - Key-Value Deep Dive** | [KV Concepts & Tradeoffs](07-key-value-deep-dive/01-kv-concepts-and-tradeoffs.md), [Value Types & Key Design](07-key-value-deep-dive/02-value-types-and-key-design.md), [Common Patterns](07-key-value-deep-dive/03-common-patterns.md), [Caching & Expiration](07-key-value-deep-dive/04-caching-and-expiration.md), [Cache Write Patterns](07-key-value-deep-dive/05-cache-write-patterns.md), [Replication](07-key-value-deep-dive/06-replication.md), [Sharding](07-key-value-deep-dive/07-sharding.md) | ~120 min |
+| **08 - Graph Deep Dive** | [Why Graphs?](08-graph-deep-dive/01-why-graphs.md), [Property Graph Model](08-graph-deep-dive/02-property-graph-model.md), [Traversal & Patterns](08-graph-deep-dive/03-traversal-and-pattern-matching.md), [Graph Algorithms](08-graph-deep-dive/04-graph-algorithms-overview.md), [Real-World Use Cases](08-graph-deep-dive/05-real-world-use-cases.md), [Tradeoffs](08-graph-deep-dive/06-tradeoffs-and-limitations.md), [Replication](08-graph-deep-dive/07-replication.md), [Sharding](08-graph-deep-dive/08-sharding.md) | ~120 min |
 
-**Total: ~7 hours** (split across three sessions)
+**Total: ~9 hours** (split across four sessions)
 
 ## Session Split
 
 - **Session 1 (~1.5 hours):** Modules 01 and 02 — NoSQL concepts and database types
 - **Session 2 (~3 hours):** Document store deep dive (MongoDB) — basics, replication, sharding with hands-on clusters
 - **Session 3 (~2 hours):** Key-value deep dive (Redis) — Sentinel and Cluster labs
+- **Session 4 (~2 hours):** Graph deep dive (Neo4j) — traversal, algorithms, causal cluster lab
 
 ## Lab Environments
 
@@ -58,6 +62,7 @@ Labs are under `labs/` and started via the root Makefile:
 
 - **Document store:** `make lab-nosql` (single node), `make lab-replica-set` (3-node replica set), `make lab-sharded` (sharded cluster)
 - **Key-value:** `make lab-redis`, `make lab-redis-sentinel`, `make lab-redis-cluster`
+- **Graph store:** `make lab-neo4j` (single Neo4j, lessons 01-06), `make lab-neo4j-cluster` (3-node causal cluster, lesson 07)
 
 ## Tools Used
 
@@ -68,6 +73,7 @@ Labs are under `labs/` and started via the root Makefile:
 | **MongoDB Compass** | Optional GUI for visual exploration (mentioned, not used in exercises) |
 | **redis-py** | Redis client for Python: single instance, Sentinel, and Cluster modes |
 | **redis-cli** | Redis command-line interface for cluster management and inspection |
+| **neo4j (Python driver)** | Graph queries, traversal, causal cluster routing, and replication demos |
 
 ## Quick Start
 
@@ -91,6 +97,12 @@ make lab-redis-sentinel
 
 # Key-value — Redis Cluster
 make lab-redis-cluster
+
+# Graph store (Module 08) — single Neo4j (lessons 01-06)
+make lab-neo4j
+
+# Graph store — Neo4j causal cluster (lesson 07)
+make lab-neo4j-cluster
 ```
 
 Stop the current lab with `make down`.

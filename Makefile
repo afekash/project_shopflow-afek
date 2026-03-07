@@ -14,8 +14,9 @@
 
 .PHONY: docs lab-orm lab-sql lab-nosql lab-replica-set lab-sharded lab-distributed lab-web \
         lab-redis lab-redis-sentinel lab-redis-cluster \
+        lab-neo4j lab-neo4j-cluster \
         down reset shell convert \
-        replica-set-init sharded-init sql-restore redis-cluster-init \
+        replica-set-init sharded-init sql-restore redis-cluster-init neo4j-cluster-init \
         help
 
 BASE := -f labs/base/compose.yml
@@ -35,6 +36,8 @@ help:
 	@echo "  make lab-redis            Start workspace + single Redis (KV lessons 01-03)"
 	@echo "  make lab-redis-sentinel   Start workspace + Redis primary/replicas + Sentinel (KV lesson 04)"
 	@echo "  make lab-redis-cluster    Start workspace + 6-node Redis Cluster (KV lesson 05)"
+	@echo "  make lab-neo4j            Start workspace + single Neo4j (Graph lessons 01-06)"
+	@echo "  make lab-neo4j-cluster    Start workspace + 3-node Neo4j causal cluster (Graph lesson 07)"
 	@echo ""
 	@echo "  make down                 Stop the running lab"
 	@echo "  make reset                Stop + remove all containers and volumes"
@@ -43,6 +46,7 @@ help:
 	@echo "  make replica-set-init     Initialize MongoDB replica set (after lab-replica-set)"
 	@echo "  make sharded-init         Initialize MongoDB sharded cluster (after lab-sharded)"
 	@echo "  make redis-cluster-init   Initialize Redis Cluster (after lab-redis-cluster)"
+	@echo "  make neo4j-cluster-init   Initialize Neo4j Cluster (after lab-neo4j-cluster)"
 	@echo "  make sql-restore          Restore AdventureWorks/Northwind databases (after lab-sql)"
 	@echo ""
 	@echo "  make convert FILE=path    Convert a MyST lesson to py:percent (instructor only)"
@@ -115,6 +119,19 @@ lab-redis-cluster:
 	$(MAKE) redis-cluster-init
 	@echo "MyST docs: http://localhost:3000"
 
+lab-neo4j:
+	docker compose $(BASE) -f labs/neo4j/compose.yml up -d --build
+	@echo "Neo4j browser: http://localhost:7474  (neo4j / password)"
+	@echo "Bolt:          localhost:7687"
+	@echo "MyST docs:     http://localhost:3000"
+
+lab-neo4j-cluster:
+	docker compose $(BASE) -f labs/neo4j-cluster/compose.yml up -d --build
+	@echo "Waiting for Neo4j cluster nodes to start..."
+	sleep 20
+	$(MAKE) neo4j-cluster-init
+	@echo "MyST docs: http://localhost:3000"
+
 # ─── Common operations ──────────────────────────────────────────────────────
 
 down:
@@ -147,6 +164,9 @@ sql-restore:
 
 redis-cluster-init:
 	bash labs/redis-cluster/init.sh
+
+neo4j-cluster-init:
+	bash labs/neo4j-cluster/init.sh
 
 # ─── Instructor convenience ──────────────────────────────────────────────────
 

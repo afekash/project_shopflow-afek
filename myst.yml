@@ -32,11 +32,13 @@ project:
             - file: materials/core-concepts/02-data-structures/02-trees-for-storage.md
             - file: materials/core-concepts/02-data-structures/03-lsm-trees-and-sstables.md
             - file: materials/core-concepts/02-data-structures/04-probabilistic-structures.md
+            - file: materials/core-concepts/02-data-structures/05-graphs-and-traversal.md
         - title: Scaling
           children:
             - file: materials/core-concepts/03-scaling/01-vertical-vs-horizontal.md
             - file: materials/core-concepts/03-scaling/02-partitioning-strategies.md
             - file: materials/core-concepts/03-scaling/03-consistent-hashing.md
+            - file: materials/core-concepts/03-scaling/04-graph-partitioning.md
         - title: Distributed Systems
           children:
             - file: materials/core-concepts/04-distributed-systems/01-cap-theorem.md
@@ -205,6 +207,16 @@ project:
             - file: materials/nosql/07-key-value-deep-dive/05-cache-write-patterns.md
             - file: materials/nosql/07-key-value-deep-dive/06-replication.md
             - file: materials/nosql/07-key-value-deep-dive/07-sharding.md
+        - title: Graph Deep Dive
+          children:
+            - file: materials/nosql/08-graph-deep-dive/01-why-graphs.md
+            - file: materials/nosql/08-graph-deep-dive/02-property-graph-model.md
+            - file: materials/nosql/08-graph-deep-dive/03-traversal-and-pattern-matching.md
+            - file: materials/nosql/08-graph-deep-dive/04-graph-algorithms-overview.md
+            - file: materials/nosql/08-graph-deep-dive/05-real-world-use-cases.md
+            - file: materials/nosql/08-graph-deep-dive/06-tradeoffs-and-limitations.md
+            - file: materials/nosql/08-graph-deep-dive/07-replication.md
+            - file: materials/nosql/08-graph-deep-dive/08-sharding.md
 
     - file: materials/docker/README.md
       children:
