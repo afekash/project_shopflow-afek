@@ -7,10 +7,6 @@ kernelspec:
 
 # Value Types and Key Design
 
-```{note}
-This lesson requires the Redis lab. Run `make lab-redis` before starting.
-```
-
 A key-value store's entire query interface is: look up by key. That means **your key design is your data model**. Before writing any data, you need to answer: what are the access patterns, and how do I design keys that support them?
 
 Redis adds a second dimension to this: the **value type**. Unlike stores that hold opaque bytes, Redis understands the structure of common data types and provides operations that work natively on them. The choice of value type is as important as the choice of key name.

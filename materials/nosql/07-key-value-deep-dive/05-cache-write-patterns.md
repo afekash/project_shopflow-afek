@@ -7,10 +7,6 @@ kernelspec:
 
 # Cache Write Patterns
 
-```{note}
-This lesson requires the Redis lab. Run `make lab-redis` before starting.
-```
-
 Cache-aside populates the cache on reads. But writes require their own strategy: when data changes in your database, what happens to the cached copy?
 
 The previous lesson covered the read side of caching (cache-aside, TTL, expiration). This lesson covers the write side: **write-through** and **write-behind** -- two patterns that determine how writes flow between Redis and your source of truth.

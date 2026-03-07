@@ -7,10 +7,6 @@ kernelspec:
 
 # Common Patterns
 
-```{note}
-This lesson requires the Redis lab. Run `make lab-redis` before starting.
-```
-
 Key-value stores solve a specific class of problems extremely well. This lesson walks through six patterns that appear constantly in production systems -- each one a natural fit for Redis's data model and O(1) lookup semantics.
 
 ---

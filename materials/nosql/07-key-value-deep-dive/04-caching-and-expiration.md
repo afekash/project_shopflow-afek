@@ -7,10 +7,6 @@ kernelspec:
 
 # Caching and Expiration
 
-```{note}
-This lesson requires the Redis lab. Run `make lab-redis` before starting.
-```
-
 Caching is the most common reason to reach for Redis. An application has a slow operation -- a database query, an external API call, a computation -- and repeats it many times. Redis sits in front of the slow operation, serving results from memory so the expensive call only happens occasionally.
 
 This lesson is about how caching works on the read side: the cache-aside pattern, how TTL and expiration actually work internally, eviction policies when memory is full, and the cache stampede problem.
