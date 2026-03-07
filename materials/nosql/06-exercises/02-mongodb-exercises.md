@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # MongoDB Exercises
 
 Independent challenges that combine all the MongoDB concepts covered in this course. Work through each exercise on your own, then compare with classmates.
@@ -49,7 +56,7 @@ The platform has:
 
 **Setup**: Run this Python cell to create a collection with 200K documents. This also sets up the `db` reference used in all tasks below.
 
-```python
+```{code-cell} python
 from pymongo import MongoClient
 import random
 import pprint
@@ -88,7 +95,7 @@ print(db.restaurants.count_documents({}), "restaurants inserted")
    - Design the optimal index following the ESR rule. Create it with `create_index()`.
    - Run it again. Compare the metrics.
 
-   ```python
+   ```{code-cell} python
    # Helper to print the key explain metrics
    def show_plan(cursor):
        plan = cursor.explain("executionStats")
@@ -109,7 +116,7 @@ print(db.restaurants.count_documents({}), "restaurants inserted")
 3. **Covered query**: Design a query and index combination where `totalDocsExamined` equals 0. Show the explain output proving no documents were fetched.
 
 4. **Audit your indexes**:
-   ```python
+   ```{code-cell} python
    for stat in db.restaurants.aggregate([{"$indexStats": {}}]):
        print(stat["name"], "→ ops:", stat["accesses"]["ops"])
    ```
@@ -129,7 +136,7 @@ bash init-replica.sh
 
 Use this Python setup cell throughout this exercise:
 
-```python
+```{code-cell} python
 from pymongo import MongoClient, ReadPreference
 from pymongo.write_concern import WriteConcern
 import time
@@ -144,7 +151,7 @@ db = client["demo"]
 1. **Identify the current primary**:
    Use Python to discover which node is the current primary.
 
-   ```python
+   ```{code-cell} python
    # The driver exposes topology info via the admin command
    result = client.admin.command("isMaster")
    print("Primary:", result["primary"])
@@ -160,7 +167,7 @@ db = client["demo"]
 2. **Insert a document and confirm replication**:
    Insert on the primary, then read it back from a secondary.
 
-   ```python
+   ```{code-cell} python
    # Write to primary
    db.events.insert_one({"type": "exercise_3", "user": "alice", "ts": time.time()})
 
@@ -182,7 +189,7 @@ db = client["demo"]
    ```
 
    In Python, poll for the new primary:
-   ```python
+   ```{code-cell} python
    import time
    start = time.time()
    while True:
@@ -199,7 +206,7 @@ db = client["demo"]
 4. **Verify data integrity**:
    Connect to the new primary. Confirm all previously inserted data is present. Insert a new document.
 
-   ```python
+   ```{code-cell} python
    # Client auto-reconnects to the new primary after election
    count = db.events.count_documents({})
    print(f"Documents on new primary: {count}")
@@ -213,7 +220,7 @@ db = client["demo"]
    docker compose start mongo1   # or whichever node you stopped
    ```
 
-   ```python
+   ```{code-cell} python
    time.sleep(15)  # allow time to rejoin and sync
    # Connect directly to the rejoined node to confirm it caught up
    old_primary = MongoClient("mongodb://localhost:27017", directConnection=True)
@@ -225,7 +232,7 @@ db = client["demo"]
 6. **Write concern experiment**:
    Measure the latency difference between `w=1` and `w="majority"`.
 
-   ```python
+   ```{code-cell} python
    N = 50
 
    # w=1 — only primary acknowledges

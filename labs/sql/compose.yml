@@ -1,0 +1,44 @@
+# SQL lab: Microsoft SQL Server sidecar.
+# Backs materials/sql/ (AdventureWorks, Northwind databases).
+# Merges with labs/base/compose.yml — do not duplicate the workspace service here.
+#
+# MSSQL is the heaviest sidecar (~1.5 GB RAM). Only start for SQL lessons.
+# After starting, restore databases: make sql-restore
+#
+# Connection: mssql+pyodbc://sa:<SA_PASSWORD>@mssql:1433/<db>?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes
+# Usage: make lab-sql
+
+services:
+  workspace:
+    build:
+      args:
+        LAB: sql
+    environment:
+      - MSSQL_HOST=mssql
+      - MSSQL_PORT=1433
+      - SA_PASSWORD=${SA_PASSWORD:-61eF92j4VTtl}
+    depends_on:
+      mssql:
+        condition: service_healthy
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    ports:
+      - "1433:1433"
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: ${SA_PASSWORD:-61eF92j4VTtl}
+      MSSQL_PID: Developer
+    volumes:
+      - sql_mssql_data:/var/opt/mssql
+      - ./data:/var/opt/mssql/backup:ro
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P '${SA_PASSWORD:-61eF92j4VTtl}' -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  sql_mssql_data:

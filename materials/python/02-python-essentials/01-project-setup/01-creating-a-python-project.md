@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Creating a Python Project
 
 ## What is a Python Project?
@@ -18,7 +25,7 @@ Let's create a basic Python project.
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 import os
 from pathlib import Path
 
@@ -71,7 +78,7 @@ A virtual environment is just a directory containing:
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 import subprocess
 import sys
 from pathlib import Path
@@ -124,7 +131,7 @@ python3 my_data_pipeline/main.py
 
 This runs `main.py` as a script. The `__name__` variable is set to `"__main__"`, which is why you see:
 
-```python
+```{code-cell} python
 if __name__ == "__main__":
     # This block runs when executed as a script
     run()
@@ -149,7 +156,7 @@ This runs `main.py` as a module within the `my_data_pipeline` package. Key diffe
 
 **Run this in the Jupyter notebook to create the files:**
 
-```python
+```{code-cell} python
 # Create utils.py
 utils_file = Path("my_data_pipeline/src/my_data_pipeline/utils.py")
 utils_file.write_text('''def greet():
@@ -225,7 +232,7 @@ my_project/
 2. **Namespace clarity**: Makes it obvious what's part of your package vs external dependencies
 3. **Build safety**: Prevents accidentally importing unbuilt/uninstalled code
 
-```python
+```{code-cell} python
 # Demonstrating the difference
 import sys
 from pathlib import Path
@@ -249,7 +256,7 @@ This file marks a directory as a Python package. It runs when you import the pac
 
 **Example - run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 # Update __init__.py to expose commonly-used functions
 init_content = '''"""My data pipeline package."""
 
@@ -269,7 +276,7 @@ print("Updated __init__.py")
 
 Now users can do:
 
-```python
+```{code-cell} python
 from my_data_pipeline import run, __version__
 print(__version__)  # "0.1.0"
 run()
@@ -277,7 +284,7 @@ run()
 
 Instead of:
 
-```python
+```{code-cell} python
 from my_data_pipeline.main import run
 ```
 
@@ -287,7 +294,7 @@ This makes your package executable with `python -m package_name`:
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 # Create __main__.py
 main_py_content = '''from .main import run
 
@@ -321,7 +328,7 @@ Python searches for imports in `sys.path`, which includes:
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 import sys
 print("Python searches for imports in these directories:")
 for path in sys.path:

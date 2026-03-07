@@ -1,0 +1,10 @@
+---
+description: Remind agent to document significant conventions and patterns
+alwaysApply: true
+---
+
+# Self-Documentation
+
+When you establish a new convention, resolve an ambiguity, or make a pattern decision that should persist across sessions, mention it to the user and suggest documenting it. If approved, use the `document-learnings` skill to route the update to the correct rule or skill file.
+
+Do not self-document trivial or one-off decisions.

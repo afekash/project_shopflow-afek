@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Object-Oriented Python
 
 Object-oriented programming (OOP) is a way to organize code by bundling data and the functions that operate on that data into reusable units called **classes**. This lesson covers why OOP exists, how to use it in Python, and practical patterns for data engineering.
@@ -6,7 +13,7 @@ Object-oriented programming (OOP) is a way to organize code by bundling data and
 
 As projects grow, procedural code becomes hard to manage. Let's see the problem:
 
-```python
+```{code-cell} python
 # First, let's create sample data files
 import csv
 import json
@@ -36,7 +43,7 @@ with open('examples/data.json', 'w') as f:
 print("Sample data files created!")
 ```
 
-```python
+```{code-cell} python
 # Procedural approach: processing CSV and JSON files
 import csv
 import json
@@ -94,7 +101,7 @@ print(f"Sample CSV data: {csv_data[0]}")  # Result: {'id': '1', 'name': 'Alice',
 
 **OOP solution: bundle related data and behavior:**
 
-```python
+```{code-cell} python
 import csv
 import json
 
@@ -155,7 +162,7 @@ OOP is often described with four principles. Here's what they mean in practice:
 
 **1. Encapsulation:** Bundle data and methods that operate on it
 
-```python
+```{code-cell} python
 class BankAccount:
     def __init__(self, balance):
         self._balance = balance  # "Private" by convention
@@ -175,7 +182,7 @@ print(f"Balance: ${account.get_balance()}")
 
 **2. Inheritance:** Reuse code by deriving from a base class
 
-```python
+```{code-cell} python
 class Animal:
     def speak(self) -> str:
         return "Some sound"
@@ -195,13 +202,13 @@ for animal in animals:
 
 **3. Polymorphism:** Same interface, different implementations
 
-```python
+```{code-cell} python
 # Already seen above: different readers, same .process() method
 ```
 
 **4. Abstraction:** Hide complexity behind simple interfaces
 
-```python
+```{code-cell} python
 # User doesn't need to know CSV parsing details:
 reader = CsvReader('data.csv')
 data = reader.process()  # Simple interface, complex implementation hidden
@@ -213,7 +220,7 @@ In practice, focus on **encapsulation** (organizing code) and **inheritance** (r
 
 ### Basic Class Definition
 
-```python
+```{code-cell} python
 class DataPipeline:
     """A simple data processing pipeline."""
     
@@ -263,7 +270,7 @@ print(f"Version: {DataPipeline.version}")
 
 Properties provide controlled access to attributes:
 
-```python
+```{code-cell} python
 class Temperature:
     def __init__(self, celsius):
         self._celsius = celsius
@@ -308,7 +315,7 @@ except ValueError as e:
 
 Inheritance allows you to create specialized classes from a base class:
 
-```python
+```{code-cell} python
 class FileReader:
     """Base class for file readers"""
     
@@ -362,7 +369,7 @@ def process_file(reader: FileReader):
 
 ### Method Overriding and `super()`
 
-```python
+```{code-cell} python
 class DataLoader:
     def __init__(self, connection_string):
         self.connection_string = connection_string
@@ -398,7 +405,7 @@ loader.load([{"id": i} for i in range(250)])
 
 For classes that primarily hold data, use `@dataclass`:
 
-```python
+```{code-cell} python
 from dataclasses import dataclass, field
 from typing import List
 
@@ -445,7 +452,7 @@ print(f"alice == alice2: {alice == alice2}")  # True
 
 ### Dataclass Features
 
-```python
+```{code-cell} python
 from dataclasses import dataclass, field, asdict, astuple
 
 @dataclass
@@ -487,7 +494,7 @@ point = ImmutablePoint(10, 20)
 
 Separate data access logic from business logic:
 
-```python
+```{code-cell} python
 from dataclasses import dataclass
 from typing import List, Optional
 
@@ -544,7 +551,7 @@ for u in all_users:
 
 Define a family of algorithms, encapsulate each one, and make them interchangeable:
 
-```python
+```{code-cell} python
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -601,7 +608,7 @@ print(xml_exporter.export(records))
 
 **Inheritance** (is-a relationship):
 
-```python
+```{code-cell} python
 class Vehicle:
     def start(self):
         print("Starting vehicle")
@@ -614,7 +621,7 @@ class Car(Vehicle):  # Car IS-A Vehicle
 
 **Composition** (has-a relationship) - covered in depth in the next lesson:
 
-```python
+```{code-cell} python
 class Engine:
     def start(self):
         print("Engine started")

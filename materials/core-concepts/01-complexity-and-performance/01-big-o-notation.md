@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Big O Notation
 
 ## The Problem
@@ -62,7 +69,7 @@ n = 1,000,000   → 1,000,000,000,000 steps  ← unusable at scale
 
 ### Concrete Examples
 
-```python
+```{code-cell} python
 # O(1) -- dictionary/hash lookup
 user_cache = {"user_42": {...}, "user_43": {...}}
 user = user_cache["user_42"]  # constant time regardless of cache size

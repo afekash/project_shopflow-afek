@@ -78,8 +78,8 @@ target/
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# Jupytext-generated notebooks (source of truth is .md files)
-materials/**/*.ipynb
+# MyST build output
+_build/
 
 # Project lesson solutions and instructor notes (not committed until after class)
 materials/project/*/solution/

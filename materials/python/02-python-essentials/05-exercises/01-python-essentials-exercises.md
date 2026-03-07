@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Python Essentials Exercises
 
 These exercises reinforce the concepts from all four lesson sections: project setup, data structures, OOP, and type systems. Complete them in order, referring back to the lesson materials as needed.
@@ -112,7 +119,7 @@ uv pip freeze > requirements.txt
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 # Customer transactions
 transactions = [
     {"customer_id": 1, "customer_name": "Alice", "amount": 100.0, "category": "electronics"},
@@ -137,7 +144,7 @@ transactions = [
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 from collections import defaultdict
 
 transactions = [
@@ -224,7 +231,7 @@ Calculate the average transaction amount per category using the grouped data.
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 import csv
 import json
 
@@ -271,7 +278,7 @@ def process_json(filepath):
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 import csv
 import json
 from abc import ABC, abstractmethod
@@ -390,7 +397,7 @@ Add a third processor type `XmlProcessor` that reads XML files. The base class s
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 def fetch_items(source):
     """Fetch items from a source"""
     return source.get_items()
@@ -431,7 +438,7 @@ print(doubled)
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 from typing import TypeVar, Generic, Callable, List
 
 T = TypeVar('T')
@@ -517,7 +524,7 @@ Create a generic `Pipeline` class that chains `filter_items` and `transform_item
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 class Pipeline(Generic[T]):
     def __init__(self, source: DataSource[T]):
         self.items = source.get_items()

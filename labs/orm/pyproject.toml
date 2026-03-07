@@ -1,0 +1,12 @@
+[project]
+name = "lab-orm"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "sqlalchemy>=2.0",
+    "alembic>=1.18",
+    "psycopg2-binary>=2.9",
+    "pandas>=3.0",
+    "pytest>=8.0",
+    "ipytest>=0.14",
+]

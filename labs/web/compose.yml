@@ -1,0 +1,11 @@
+# Web lab: FastAPI workspace.
+# Backs materials/python/03-web/.
+# Merges with labs/base/compose.yml — do not duplicate the workspace service here.
+#
+# Usage: make lab-web
+
+services:
+  workspace:
+    build:
+      args:
+        LAB: web

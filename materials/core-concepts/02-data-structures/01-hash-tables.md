@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Hash Tables
 
 ## The Problem
@@ -79,7 +86,7 @@ The **load factor** = (number of stored keys) / (number of buckets). When the lo
 
 **Rehashing**: Allocate a larger bucket array (typically 2x) and re-insert every key into the new array. This is an O(n) operation but happens rarely enough that the amortized cost per operation remains O(1).
 
-```python
+```{code-cell} python
 # Simplified hash table implementation
 class HashTable:
     def __init__(self, capacity=100):

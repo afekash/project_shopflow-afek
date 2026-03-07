@@ -1,0 +1,47 @@
+# Distributed system lab: gateway + worker + Redis.
+# Backs materials/docker/03-docker-compose/ distributed system demo.
+# Merges with labs/base/compose.yml — do not duplicate the workspace service here.
+# Demonstrates task queue pattern: gateway posts jobs to Redis, workers consume.
+#
+# Usage: make lab-distributed
+
+services:
+  workspace:
+    build:
+      args:
+        LAB: distributed
+
+  gateway:
+    build:
+      context: ../../materials/docker/demo-app/distributed-system/gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ../../materials/docker/demo-app/distributed-system/worker
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped

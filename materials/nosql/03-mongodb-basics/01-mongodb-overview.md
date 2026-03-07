@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # MongoDB Overview and Setup
 
 ## What Is MongoDB?
@@ -103,7 +110,7 @@ This is enough to work through the exercises. We won't go deep on query syntax -
 
 All examples below use **pymongo**, Python's MongoDB driver. Run these in a Jupyter notebook or Python script. Start every session with this setup cell:
 
-```python
+```{code-cell} python
 from pymongo import MongoClient
 from bson import ObjectId
 import datetime
@@ -115,7 +122,7 @@ db = client["ecommerce"]  # created automatically on first write
 
 ### Inserting Documents
 
-```python
+```{code-cell} python
 # Insert one document
 result = db.products.insert_one({
     "name": "Laptop Pro 15",
@@ -144,7 +151,7 @@ MongoDB automatically generates an `_id` field of type `ObjectId` if you don't p
 
 ### Finding Documents
 
-```python
+```{code-cell} python
 # Find all documents (returns a cursor; convert to list to print)
 all_products = list(db.products.find())
 
@@ -173,7 +180,7 @@ print(f"{count} electronics products")
 
 ### Updating Documents
 
-```python
+```{code-cell} python
 # Update one document
 result = db.products.update_one(
     {"name": "Laptop Pro 15"},               # filter
@@ -198,7 +205,7 @@ db.products.update_one(
 
 ### Deleting Documents
 
-```python
+```{code-cell} python
 # Delete one document
 result = db.products.delete_one({"name": "USB-C Hub"})
 print(f"Deleted: {result.deleted_count}")

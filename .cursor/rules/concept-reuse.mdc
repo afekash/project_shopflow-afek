@@ -1,0 +1,51 @@
+---
+description: Cross-reference core-concepts library in technology-specific lessons to reinforce that all technologies implement the same fundamental building blocks
+globs: materials/**/*.md
+alwaysApply: false
+---
+
+# Concept Reuse — Core Concepts Library
+
+## Philosophy
+
+Every technology is a bundle of well-known building blocks assembled for a specific problem and set of tradeoffs. `materials/core-concepts/` is a tool-agnostic reference library that captures these building blocks once. Technology-specific lessons (SQL, NoSQL, Python, Docker, etc.) **must** link back to it whenever a concept appears, reinforcing that:
+
+1. The concept is **not new** — it exists independently of the technology being taught
+2. The technology **chose** this concept because of the problem it solves and the tradeoffs it accepts
+3. Other technologies make **different choices** from the same toolkit — and the student has already seen (or will see) those alternatives
+
+The goal: students learn to approach any new technology by asking *"which concepts does this implement, and what tradeoffs did it make?"* instead of treating each tool as an isolated thing to memorize.
+
+## Rules for Technology-Specific Lessons
+
+### Always link to core-concepts
+
+When a lesson touches a concept that exists in `core-concepts/`, add a blockquote callout linking to the generic explanation:
+
+```
+> **Core Concept:** See [Trees for Storage](../../core-concepts/02-data-structures/02-trees-for-storage.md) for how B-trees work in general. PostgreSQL uses B-trees for indexes because it needs sorted access for range scans.
+```
+
+The callout must explain **why this technology chose this concept** — not just link to it.
+
+### Highlight tradeoff differences
+
+When the current technology made a different choice than another technology the students have seen, call it out explicitly:
+
+```
+> MongoDB uses B-trees (WiredTiger), while Cassandra uses LSM-trees — same problem (disk-based storage), different tradeoff (read-optimized vs write-optimized).
+```
+
+### README concept maps
+
+Each technology module's `README.md` should include a concept map table showing which core-concepts appear and why — see `materials/sql/README.md` and `materials/nosql/README.md` for the established format.
+
+### Don't duplicate — reference
+
+Core-concepts files own the generic explanation. Technology lessons should explain only the technology-specific application and link out for the theory. If a lesson is explaining B-trees from scratch instead of linking to `core-concepts/02-data-structures/02-trees-for-storage.md`, refactor it.
+
+## When Creating New Content
+
+- Check `materials/core-concepts/README.md` for the concept-to-technology matrix
+- If the lesson introduces a concept not yet in `core-concepts/`, create the generic file first, then link to it
+- Update the matrix in `core-concepts/README.md` when adding a new technology column or concept row

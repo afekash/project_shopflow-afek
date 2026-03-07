@@ -1,0 +1,75 @@
+# MongoDB replica set lab: 3-node replica set (rs0).
+# Backs materials/nosql/04-mongodb-replication/.
+# Merges with labs/base/compose.yml — do not duplicate the workspace service here.
+# Replica set must be initialized after startup: make replica-set-init
+#
+# Connection: mongodb://mongo1:27017,mongo2:27018,mongo3:27019/?replicaSet=rs0
+# Usage: make lab-replica-set
+
+services:
+  workspace:
+    build:
+      args:
+        LAB: replica-set
+    environment:
+      - MONGO_RS_URI=mongodb://mongo1:27017,mongo2:27018,mongo3:27019/?replicaSet=rs0
+    depends_on:
+      mongo1:
+        condition: service_healthy
+      mongo2:
+        condition: service_healthy
+      mongo3:
+        condition: service_healthy
+
+  mongo1:
+    image: mongo:8
+    container_name: mongo1
+    hostname: mongo1
+    ports:
+      - "27017:27017"
+    command: mongod --replSet rs0 --bind_ip_all --port 27017
+    volumes:
+      - rs_mongo1_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh --port 27017 --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  mongo2:
+    image: mongo:8
+    container_name: mongo2
+    hostname: mongo2
+    ports:
+      - "27018:27018"
+    command: mongod --replSet rs0 --bind_ip_all --port 27018
+    volumes:
+      - rs_mongo2_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh --port 27018 --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  mongo3:
+    image: mongo:8
+    container_name: mongo3
+    hostname: mongo3
+    ports:
+      - "27019:27019"
+    command: mongod --replSet rs0 --bind_ip_all --port 27019
+    volumes:
+      - rs_mongo3_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh --port 27019 --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  rs_mongo1_data:
+  rs_mongo2_data:
+  rs_mongo3_data:

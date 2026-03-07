@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Distributed System Demo
 
 ## Overview
@@ -56,7 +63,7 @@ distributed-system/
 The Gateway is a FastAPI application that accepts HTTP requests and manages tasks.
 
 **gateway/main.py:**
-```python
+```{code-cell} python
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import redis
@@ -154,7 +161,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 The Worker polls Redis for tasks, processes them (with simulated work), and stores results.
 
 **worker/main.py:**
-```python
+```{code-cell} python
 import redis
 import json
 import time
@@ -348,14 +355,14 @@ docker compose down
 Notice how services communicate:
 
 **Gateway connects to Redis:**
-```python
+```{code-cell} python
 r = redis.Redis(host='redis', port=6379, decode_responses=True)
 #                     ↑
 #                 service name (not IP!)
 ```
 
 **Worker connects to Redis:**
-```python
+```{code-cell} python
 r = redis.Redis(host='redis', port=6379, decode_responses=True)
 #                     ↑
 #                 same service name

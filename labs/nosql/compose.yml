@@ -1,0 +1,36 @@
+# NoSQL basics lab: standalone MongoDB.
+# Backs materials/nosql/01-introduction/, 02-nosql-types/, 03-mongodb-basics/.
+# Merges with labs/base/compose.yml — do not duplicate the workspace service here.
+# For replication/sharding see labs/replica-set/ and labs/sharded/.
+#
+# Connection: mongodb://mongo:27017
+# Usage: make lab-nosql
+
+services:
+  workspace:
+    build:
+      args:
+        LAB: nosql
+    environment:
+      - MONGO_HOST=mongo
+      - MONGO_PORT=27017
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  mongo:
+    image: mongo:8
+    ports:
+      - "27017:27017"
+    volumes:
+      - nosql_mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  nosql_mongo_data:

@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Replica Set Architecture
 
 ## Why Replication?
@@ -67,7 +74,7 @@ If secondary is behind: it reads from T1. If it just restarted: it reads from wh
 
 **Oplog size**: Configurable, default ~5% of free disk space (minimum 990MB). If a secondary falls so far behind that the primary's oplog has rolled over, the secondary cannot catch up and enters a `RECOVERING` state -- it needs to be re-synced from scratch.
 
-```python
+```{code-cell} python
 import pprint
 from pymongo import MongoClient
 
@@ -147,7 +154,7 @@ graph LR
 
 The examples below use **pymongo**. Add this setup cell once at the top of your notebook:
 
-```python
+```{code-cell} python
 from pymongo import MongoClient, ReadPreference
 from pymongo.write_concern import WriteConcern
 from pymongo.read_concern import ReadConcern
@@ -159,7 +166,7 @@ client = MongoClient(
 db = client["demo"]
 ```
 
-```python
+```{code-cell} python
 # Write with majority write concern (waits for 2 of 3 nodes to confirm)
 orders_coll = db.get_collection(
     "orders",
@@ -209,7 +216,7 @@ graph TD
 
 **Important**: Reads from secondaries may be **stale** (lag behind the primary). If your application writes a record and immediately reads it back, reading from a secondary might not see the new write. Use `primary` or `primaryPreferred` for read-your-writes consistency.
 
-```python
+```{code-cell} python
 # Default: reads go to the primary (always fresh)
 primary_db = client.get_database("demo", read_preference=ReadPreference.PRIMARY)
 list(primary_db.products.find({"category": "electronics"}))
@@ -235,7 +242,7 @@ sec_pref_db.products.find_one({"category": "electronics"})
 | `linearizable`    | Data guaranteed to reflect all successful majority-committed writes before the read | Strongest, slowest                |
 
 
-```python
+```{code-cell} python
 # Read only data confirmed by majority (won't return rolled-back writes)
 accounts_coll = db.get_collection(
     "accounts",

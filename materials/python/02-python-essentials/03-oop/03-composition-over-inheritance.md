@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Composition Over Inheritance
 
 "Composition over inheritance" is a design principle that favors building functionality by combining objects rather than inheriting from parent classes. This lesson explores why deep inheritance hierarchies become problematic and how composition provides a more flexible alternative.
@@ -8,7 +15,7 @@ Inheritance seems elegant at first: create a base class, derive specialized vers
 
 ### Example: The Classic Problem
 
-```python
+```{code-cell} python
 class Animal:
     def __init__(self, name):
         self.name = name
@@ -44,7 +51,7 @@ class TherapyGuideDog(GuideDog, TherapyDog):
 
 Multiple inheritance can create ambiguity:
 
-```python
+```{code-cell} python
 class A:
     def method(self):
         print("A's method")
@@ -111,7 +118,7 @@ Composition means building functionality by **combining objects** rather than in
 - Inheritance: A `GuideDog` **is-a** `Dog`
 - Composition: A `Dog` **has-a** list of abilities
 
-```python
+```{code-cell} python
 # Good: composition-based design
 class Ability:
     """Base class for abilities (could also be a Protocol)"""
@@ -202,7 +209,7 @@ class JsonApiReportGenerator(ReportGenerator):
 
 **Good: Composition**
 
-```python
+```{code-cell} python
 from typing import Protocol
 
 class DataSource(Protocol):
@@ -291,7 +298,7 @@ Let's refactor a realistic data processing pipeline:
 
 ### Before: Inheritance-Heavy
 
-```python
+```{code-cell} python
 class BaseProcessor:
     def process(self, data):
         return data
@@ -322,7 +329,7 @@ class TransformedValidatedCsvProcessor(ValidatedCsvProcessor):
 
 ### After: Composition-Based
 
-```python
+```{code-cell} python
 from typing import Protocol, List
 
 # Define component interfaces
@@ -449,7 +456,7 @@ simple_processor = Processor(
 
 **Rule of thumb:**
 
-```python
+```{code-cell} python
 # Good use of inheritance: shallow, true "is-a"
 class Vehicle:
     def start(self):
@@ -472,7 +479,7 @@ class Car:
 
 Mixins are small classes that provide specific functionality. They're a compromise between inheritance and composition.
 
-```python
+```{code-cell} python
 class TimestampMixin:
     """Adds created_at and updated_at tracking"""
     def __init__(self, *args, **kwargs):
@@ -534,7 +541,7 @@ print(f"Created: {record.created_at}")
 
 **Practical advice:**
 
-```python
+```{code-cell} python
 # Start with composition by default
 class Pipeline:
     def __init__(self, reader, processor, writer):

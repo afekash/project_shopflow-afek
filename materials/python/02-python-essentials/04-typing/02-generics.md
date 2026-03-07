@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Generics
 
 Generics allow you to write functions and classes that work with multiple types while maintaining type safety. Instead of using `Any` (which disables type checking), generics let you say "this works with any type, but maintains consistency."
@@ -29,7 +36,7 @@ result = first([1, 2, 3])
 
 **Generics provide a third option: reusable + type-safe**
 
-```python
+```{code-cell} python
 from typing import TypeVar
 
 T = TypeVar('T')
@@ -52,7 +59,7 @@ text = first(strings)  # Type checker knows text is str
 
 `TypeVar` creates a type variable that represents "some type":
 
-```python
+```{code-cell} python
 from typing import TypeVar
 
 T = TypeVar('T')
@@ -87,7 +94,7 @@ print(f"Pair 2: {p2}")
 
 Constrain what types a TypeVar can be:
 
-```python
+```{code-cell} python
 from typing import TypeVar
 
 # Only numeric types
@@ -129,7 +136,7 @@ print(max_item(["apple", "zebra", "banana"]))
 
 Classes can also be generic:
 
-```python
+```{code-cell} python
 from typing import Generic, TypeVar
 
 T = TypeVar('T')
@@ -163,7 +170,7 @@ print(f"Str box: {text}")
 
 ### Practical Example: Generic Repository
 
-```python
+```{code-cell} python
 from typing import Generic, TypeVar, Optional, List
 from dataclasses import dataclass
 
@@ -233,7 +240,7 @@ if product:
 
 Combine Protocols (from the interfaces lesson) with generics:
 
-```python
+```{code-cell} python
 from typing import Protocol, TypeVar, List
 
 T = TypeVar('T')
@@ -284,7 +291,7 @@ print(f"Int data: {int_data}")
 
 ## Practical Example: Generic Pipeline
 
-```python
+```{code-cell} python
 from typing import Generic, TypeVar, Callable, List
 
 InputT = TypeVar('InputT')
@@ -335,7 +342,7 @@ print(f"Doubled prices: {doubled}")  # [21.0, 40.6, 31.4]
 
 ## Generic with Multiple Type Parameters
 
-```python
+```{code-cell} python
 from typing import Generic, TypeVar
 
 K = TypeVar('K')
@@ -377,7 +384,7 @@ print(f"Items: {items}")
 
 **Advanced Note**: Generics have variance rules that affect subtyping. This is advanced, but important for library authors.
 
-```python
+```{code-cell} python
 from typing import TypeVar, Generic
 
 # Covariant: preserves subtyping (output positions)
@@ -409,7 +416,7 @@ class Consumer(Generic[T_contra]):
 
 Generics shine in large projects:
 
-```python
+```{code-cell} python
 from typing import Generic, TypeVar, Protocol
 from dataclasses import dataclass
 
@@ -480,7 +487,7 @@ print(f"Orders: {len(orders)}")
 
 **Best Practices:**
 
-```python
+```{code-cell} python
 # Good: Generic function
 def first(items: list[T]) -> T:
     return items[0]

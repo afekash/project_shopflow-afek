@@ -1,43 +1,21 @@
+---
+kernelspec:
+  name: python3
+  display_name: Python 3
+  language: python
+---
+
 # FastAPI Routes
 
-FastAPI turns a regular Python function into an HTTP endpoint with a single decorator. This file shows how that works, covering the patterns you'll see in the scaffolded project code.
-
-## Setup
-
-```bash
-pip install fastapi "uvicorn[standard]" httpx
+```{note}
+This lesson requires the web lab. Run `make lab-web` before starting.
 ```
+
+FastAPI turns a regular Python function into an HTTP endpoint with a single decorator. This lesson covers the patterns you'll see in the scaffolded project code.
 
 ## Your First Route
 
-```python
-from fastapi import FastAPI
-
-app = FastAPI()
-
-@app.get("/products")
-def list_products():
-    return [
-        {"id": 1, "name": "Laptop Pro", "price": 1299.99},
-        {"id": 2, "name": "Wool Sweater", "price": 49.99},
-    ]
-```
-
-`@app.get("/products")` registers `list_products` as the handler for `GET /products`. Whatever the function returns is automatically serialized to JSON. That's the whole model -- a decorator maps a URL to a function.
-
-To start the server from the command line:
-
-```bash
-uvicorn main:app --reload
-```
-
-Then open `http://localhost:8000/products` in a browser, or `http://localhost:8000/docs` for the interactive Swagger UI.
-
-## Running Routes in a Notebook
-
-Since a running server isn't practical inside a notebook, FastAPI ships with a `TestClient` that sends requests in-process. Use it whenever you want to run route code without starting a server:
-
-```python
+```{code-cell} python
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -52,18 +30,25 @@ def list_products():
 
 client = TestClient(app)
 response = client.get("/products")
-print(response.status_code)  # Result: 200
+print(response.status_code)   # 200
 print(response.json())
-# Result: [{'id': 1, 'name': 'Laptop Pro', 'price': 1299.99}, {'id': 2, 'name': 'Wool Sweater', 'price': 49.99}]
 ```
 
-The `TestClient` approach is identical in behavior to a real HTTP client -- it just skips the network.
+`@app.get("/products")` registers `list_products` as the handler for `GET /products`. Whatever the function returns is automatically serialized to JSON. That's the whole model — a decorator maps a URL to a function.
+
+To run this as a real server outside the notebook:
+
+```bash
+uvicorn main:app --reload
+```
+
+Then open `http://localhost:8000/products` in a browser, or `http://localhost:8000/docs` for the interactive Swagger UI.
 
 ## Path Parameters
 
 To capture a value from the URL, wrap it in curly braces in the path string and add a matching typed parameter to the function:
 
-```python
+```{code-cell} python
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
@@ -83,22 +68,22 @@ def get_product(product_id: int):
 client = TestClient(app)
 
 response = client.get("/products/1")
-print(response.json())  # Result: {'id': 1, 'name': 'Laptop Pro', 'price': 1299.99}
+print(response.json())           # {'id': 1, 'name': 'Laptop Pro', 'price': 1299.99}
 
 response = client.get("/products/99")
-print(response.status_code)   # Result: 404
-print(response.json())        # Result: {'detail': 'Product 99 not found'}
+print(response.status_code)      # 404
+print(response.json())           # {'detail': 'Product 99 not found'}
 ```
 
 FastAPI uses the `int` type hint to convert the URL string automatically. If the caller passes `/products/abc`, FastAPI returns `422 Unprocessable` before your function is even called.
 
-`HTTPException` is how you signal an error response. Raise it with a status code and a message -- FastAPI formats the JSON response.
+`HTTPException` is how you signal an error response — raise it with a status code and a message, and FastAPI formats the JSON response.
 
 ## Query Parameters
 
-Parameters added to the function signature that are *not* in the path become query parameters (the `?key=value` part of a URL):
+Parameters in the function signature that are *not* in the path become query parameters (the `?key=value` part of a URL):
 
-```python
+```{code-cell} python
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -120,17 +105,17 @@ client = TestClient(app)
 
 response = client.get("/products?category=clothing")
 print(response.json())
-# Result: [{'id': 2, 'name': 'Wool Sweater', 'category': 'clothing'}]
+# [{'id': 2, 'name': 'Wool Sweater', 'category': 'clothing'}]
 
 response = client.get("/products")
-print(len(response.json()))  # Result: 3
+print(len(response.json()))   # 3
 ```
 
 ## POST: Receiving Data
 
 A `POST` route receives data in the request body. Declare a Pydantic model for the expected shape and FastAPI will parse and validate the incoming JSON automatically:
 
-```python
+```{code-cell} python
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
@@ -155,16 +140,16 @@ response = client.post("/orders", json={
     "items": [{"product_id": 1, "quantity": 2}],
 })
 print(response.json())
-# Result: {'status': 'created', 'customer_id': 7, 'item_count': 1}
+# {'status': 'created', 'customer_id': 7, 'item_count': 1}
 ```
 
-FastAPI sees that `order` is typed as `CreateOrderRequest` (a Pydantic model) and treats it as a request body -- not a path or query parameter.
+FastAPI sees that `order` is typed as `CreateOrderRequest` (a Pydantic model) and treats it as a request body — not a path or query parameter.
 
 ## Swagger UI
 
-When the server is running, FastAPI auto-generates a fully interactive API browser at `http://localhost:8000/docs`. It lists every route, shows the expected JSON shape for request bodies, and lets you send real requests and see real responses without writing a single line of client code.
+When the server is running, FastAPI auto-generates a fully interactive API browser at `http://localhost:8000/docs`. It lists every route, shows the expected JSON shape for request bodies, and lets you send real requests without writing any client code.
 
-In the capstone project, Swagger UI is your primary tool for manually testing your `DBAccess` methods end-to-end. Start the server, open `/docs`, and try placing an order -- your implementation handles what happens next.
+In the capstone project, Swagger UI is your primary tool for manually testing your `DBAccess` methods end-to-end.
 
 **Navigation:**
 - **Previous**: [← How Web APIs Work](01-how-web-apis-work.md)

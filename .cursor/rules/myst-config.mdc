@@ -1,0 +1,61 @@
+---
+description: myst.yml schema conventions and TOC structure
+globs: myst.yml
+alwaysApply: false
+---
+
+# myst.yml Conventions
+
+## Schema Layout
+
+`toc` and `jupyter` belong under `project`, not `site`:
+
+```yaml
+version: 1
+project:
+  jupyter:
+    binder: false
+    server:
+      url: http://localhost:8888/
+      token: ""
+    kernelName: python3
+  toc:
+    - file: ...
+
+site:
+  template: book-theme
+  options: ...
+  nav: ...
+  projects:
+    - path: .
+      slug: <project-slug>   # required
+```
+
+## TOC Structure
+
+- `toc` lives under `project.toc`, not `site.toc`
+- Group related files under `title:` + `children:` (no `file:` = collapsible section header)
+- Top-level module entries use `file:` (the README) with `children:` for sub-topics
+
+```yaml
+- file: materials/some-module/README.md
+  children:
+    - title: Sub-topic Group
+      children:
+        - file: materials/some-module/01-subtopic/01-lesson.md
+        - file: materials/some-module/01-subtopic/02-lesson.md
+```
+
+## Nav URLs
+
+`site.nav` entries must use real page paths (not `/`):
+
+```yaml
+nav:
+  - title: Home
+    url: /welcome
+```
+
+## jupyter config
+
+Do **not** use a `thebe:` key inside `project.jupyter`. The correct keys are `binder`, `server`, `kernelName`, `lite`.

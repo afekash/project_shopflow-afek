@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Dependency Management
 
 Managing external packages is fundamental to Python development. This lesson compares traditional `pip` with modern alternatives like `uv`, and covers how dependencies are handled in production environments.
@@ -10,7 +17,7 @@ Managing external packages is fundamental to Python development. This lesson com
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 import subprocess
 import sys
 
@@ -34,7 +41,7 @@ subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 # Create a requirements.txt showing different version constraints
 requirements_examples = """
 # Exact version (most restrictive)
@@ -66,7 +73,7 @@ print("Version specifier examples written to requirements-examples.txt")
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 # requirements.txt
 with open("requirements.txt", "w") as f:
     f.write("""pandas>=2.0.0
@@ -85,7 +92,7 @@ Result: "It works on my machine" bugs.
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 import subprocess
 import sys
 
@@ -112,7 +119,7 @@ with open("requirements-lock.txt", "w") as f:
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 # Typical workflow
 import subprocess
 import sys
@@ -236,7 +243,7 @@ The `uv.lock` file captures the entire dependency tree with exact versions and h
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 example_lock = """
 # Example snippet from uv.lock
 [[package]]
@@ -335,7 +342,7 @@ Most Python applications are deployed in Docker containers. Here's the typical p
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 # Example Dockerfile (shown as Python string for Jupytext compatibility)
 dockerfile_content = '''
 FROM python:3.11-slim
@@ -373,7 +380,7 @@ For faster builds, you can use `uv` in Docker:
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 dockerfile_uv = '''
 FROM python:3.11-slim
 
@@ -412,7 +419,7 @@ For production, use multi-stage builds to minimize image size:
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 dockerfile_multistage = '''
 # Stage 1: Build dependencies
 FROM python:3.11-slim AS builder
@@ -451,7 +458,7 @@ This produces smaller images because the final stage doesn't include build tools
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 # Example GitHub Actions workflow
 github_workflow = '''
 name: Test and Deploy
@@ -506,7 +513,7 @@ Specify which Python version your project needs:
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 with open(".python-version", "w") as f:
     f.write("3.11\n")
 
@@ -521,7 +528,7 @@ Separate dependencies you need for development (testing, linting) from productio
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 # In pyproject.toml
 pyproject_with_dev_deps = """
 [project]
@@ -566,7 +573,7 @@ Companies often host internal packages on private registries (e.g., AWS CodeArti
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 # Configure pip to use private registry
 pip_conf = """
 [global]
@@ -600,7 +607,7 @@ In monorepos with multiple Python projects:
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 # Shared dependencies in root pyproject.toml
 # Project-specific dependencies in subdirectories
 monorepo_structure = """

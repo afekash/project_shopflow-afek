@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Hands-On: Sharded Cluster
 
 ## Setup
@@ -24,7 +31,7 @@ docker compose ps
 
 Connect to the cluster via `mongos` — this is the single entry point for all operations. Run this setup cell once before starting the exercises:
 
-```python
+```{code-cell} python
 from pymongo import MongoClient
 import datetime
 
@@ -44,7 +51,7 @@ def explain(collection_name, filter_doc):
 
 Use Python to inspect the state of the sharded cluster — which shards exist, which collections are sharded, and how chunks are distributed.
 
-```python
+```{code-cell} python
 # List all registered shards
 shards = client.admin.command("listShards")["shards"]
 print("=== Shards ===")
@@ -89,7 +96,7 @@ Expected output:
 
 Now check document distribution across shards:
 
-```python
+```{code-cell} python
 stats = db.command("collStats", "events_hashed")
 total_docs = stats["count"]
 print(f"Total: {stats['size'] / 1024**2:.2f} MiB  |  {total_docs} docs")
@@ -111,7 +118,7 @@ Total: 7.25 MiB  |  50000 docs
 
 A query that includes the shard key lets `mongos` route to exactly the right shard.
 
-```python
+```{code-cell} python
 # Query with shard key: mongos knows which shard owns user_0001
 plan = explain("events_hashed", {"user_id": "user_0001"})
 
@@ -138,7 +145,7 @@ Time (ms):      1                   ← Fast: only 1 shard queried
 
 Try different users and observe they may route to different shards:
 
-```python
+```{code-cell} python
 for uid in ["user_0001", "user_0500", "user_0999"]:
     plan = explain("events_hashed", {"user_id": uid})
     shard = plan["queryPlanner"]["winningPlan"]["shards"][0]["shardName"]
@@ -149,7 +156,7 @@ for uid in ["user_0001", "user_0500", "user_0999"]:
 
 Now query without the shard key — `mongos` has no choice but to ask every shard.
 
-```python
+```{code-cell} python
 # Query WITHOUT shard key: mongos must contact all shards
 plan = explain("events_hashed", {"event_type": "purchase"})
 
@@ -188,7 +195,7 @@ This is why shard key selection matters: your most frequent queries should inclu
 
 Even with sharding, you still need indexes for efficient queries within each shard. Create an index on `event_type`:
 
-```python
+```{code-cell} python
 # create_index() on a sharded collection propagates to ALL shards automatically
 db.events_hashed.create_index([("event_type", 1)])
 print("Index created on all shards")
@@ -215,7 +222,7 @@ It's still `SHARD_MERGE` (both shards contacted) but now each shard uses its loc
 
 Compare how hashed and ranged sharding distribute data differently:
 
-```python
+```{code-cell} python
 for coll_name in ("events_hashed", "events_ranged"):
     stats = db.command("collStats", coll_name)
     total = stats["count"]
@@ -229,7 +236,7 @@ for coll_name in ("events_hashed", "events_ranged"):
 
 Now observe range query routing behavior:
 
-```python
+```{code-cell} python
 # Range query on ranged collection — may be targeted to one shard
 plan_ranged = explain("events_ranged", {"user_id": {"$gte": "user_0001", "$lte": "user_0100"}})
 print("=== Ranged collection, range query ===")
@@ -249,7 +256,7 @@ print("Docs examined:", plan_hashed["executionStats"]["totalDocsExamined"])
 
 The application doesn't need to know about shards at all — it just connects to `mongos`.
 
-```python
+```{code-cell} python
 # Insert — mongos decides which shard based on the user_id hash
 result = db.events_hashed.insert_one({
     "user_id": "user_9999",
@@ -273,7 +280,7 @@ print("Routed to shard:", plan["queryPlanner"]["winningPlan"]["shards"][0]["shar
 
 After exercises, the balancer may have run and created more chunks. Re-check the distribution:
 
-```python
+```{code-cell} python
 config = client["config"]
 for coll in config.collections.find({"dropped": {"$ne": True}}):
     counts = {}

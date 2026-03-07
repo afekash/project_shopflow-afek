@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Type Hints
 
 Type hints are optional annotations that specify what types variables, function parameters, and return values should have. While Python remains dynamically typed, type hints provide documentation, IDE support, and early bug detection through static analysis.
@@ -6,7 +13,7 @@ Type hints are optional annotations that specify what types variables, function 
 
 Consider these two functions:
 
-```python
+```{code-cell} python
 # Without type hints
 def process_records(data, config):
     result = []
@@ -38,7 +45,7 @@ def process_records(data: list[dict], config: dict[str, int]) -> list[dict]:
 3. **Early bug detection**: Catch type errors before running code
 4. **Onboarding**: New team members understand code faster
 
-```python
+```{code-cell} python
 # Demonstrating IDE benefits
 def get_user(user_id: int) -> dict[str, str]:
     """Fetch user by ID"""
@@ -54,7 +61,7 @@ name = user["name"]  # IDE knows this is a string
 
 ### Primitive Types
 
-```python
+```{code-cell} python
 # Variables (optional, but helps clarity)
 age: int = 25
 price: float = 19.99
@@ -79,7 +86,7 @@ print(calculate_discount(100.0, 0.2))
 
 ### None and Optional Values
 
-```python
+```{code-cell} python
 # Function that might return None
 def find_user(user_id: int) -> dict | None:
     """Returns user dict or None if not found"""
@@ -116,7 +123,7 @@ if config:
 
 ### Lists, Dicts, Sets, Tuples
 
-```python
+```{code-cell} python
 # Lists of specific types
 numbers: list[int] = [1, 2, 3, 4, 5]
 names: list[str] = ["Alice", "Bob", "Charlie"]
@@ -140,7 +147,7 @@ numbers: tuple[int, ...] = (1, 2, 3, 4, 5)  # Any number of ints
 
 ### Nested Collections
 
-```python
+```{code-cell} python
 # List of dictionaries (common in data engineering)
 records: list[dict[str, str]] = [
     {"name": "Alice", "city": "NYC"},
@@ -177,7 +184,7 @@ users_by_city: dict[str, list[dict[str, str | int]]] = {
 
 Sometimes a value can be one of several types:
 
-```python
+```{code-cell} python
 # Union types with | operator
 def process_id(user_id: int | str) -> str:
     """Accept int or str ID, return str"""
@@ -220,7 +227,7 @@ Type hints are checked by **static type checkers** like `mypy`. They analyze you
 
 ### Installing and Running mypy
 
-```python
+```{code-cell} python
 # Installation (would be done via command line)
 # pip install mypy
 
@@ -257,7 +264,7 @@ Create `pyproject.toml`:
 
 **Run this in the Jupyter notebook:**
 
-```python
+```{code-cell} python
 # Example mypy configuration (as Python string for Jupytext)
 mypy_config = """
 [tool.mypy]
@@ -288,7 +295,7 @@ print(mypy_config)
 - `--ignore-missing-imports`: Ignore imports without type stubs
 - `--disallow-untyped-defs`: Require type hints on all functions
 
-```python
+```{code-cell} python
 # Demonstrating type errors mypy catches
 def calculate_total(items: list[dict[str, int]]) -> int:
     total = 0
@@ -310,7 +317,7 @@ print(f"Total: {total}")
 
 ### Type Hints for Data Engineering
 
-```python
+```{code-cell} python
 from dataclasses import dataclass
 
 @dataclass
@@ -361,7 +368,7 @@ print(f"Aggregated: {aggregated}")
 
 ### Type Hints for APIs
 
-```python
+```{code-cell} python
 from dataclasses import dataclass
 
 @dataclass
@@ -398,7 +405,7 @@ print(f"Fetched {len(users)} users")
 
 Sometimes you need types only for type checking, not at runtime. Use `TYPE_CHECKING`:
 
-```python
+```{code-cell} python
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -423,7 +430,7 @@ def process_data_alt(data: "list[dict]") -> str:
 
 ### Callable Types
 
-```python
+```{code-cell} python
 from typing import Callable
 
 # Function that takes a function as argument
@@ -469,7 +476,7 @@ print(f"Total: {total}")
 
 ### Any and TypeVar (Preview)
 
-```python
+```{code-cell} python
 from typing import Any
 
 # Any: opt-out of type checking (use sparingly)

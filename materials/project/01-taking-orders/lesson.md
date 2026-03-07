@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Phase 1: Taking Orders
 
 ## The Situation
@@ -48,7 +55,7 @@ The operation must be atomic: if any requested product does not have enough stoc
 When an order completes, a complete snapshot of the order is saved — customer details, product names, prices — exactly as they were at the moment of purchase. This snapshot must be retrievable later even if product prices or names change.
 
 **Signature:**
-```python
+```{code-cell} python
 def create_order(self, customer_id: int, items: list[dict]) -> dict:
     # items: [{"product_id": int, "quantity": int}, ...]
 ```
@@ -69,7 +76,7 @@ def create_order(self, customer_id: int, items: list[dict]) -> dict:
 The response must include all category-specific fields — a single call must return everything needed to render the page, regardless of category.
 
 **Signature:**
-```python
+```{code-cell} python
 def get_product(self, product_id: int) -> dict | None:
 ```
 
@@ -87,7 +94,7 @@ def get_product(self, product_id: int) -> dict | None:
 Filtering can be by category, by a text match on product name, or both. Results from all categories are returned in a single response.
 
 **Signature:**
-```python
+```{code-cell} python
 def search_products(self, category: str | None = None, q: str | None = None) -> list[dict]:
 ```
 
@@ -107,7 +114,7 @@ def search_products(self, category: str | None = None, q: str | None = None) -> 
 This method is called internally by `create_order` — it is not exposed directly as an API endpoint. The snapshot must embed customer details and product information as they existed at the moment of the order, so the historical record is immutable even if prices or names change later.
 
 **Signature:**
-```python
+```{code-cell} python
 def save_order_snapshot(
     self,
     order_id: int,
@@ -130,7 +137,7 @@ def save_order_snapshot(
 **What it enables:** Customer service looks up a specific order.
 
 **Signature:**
-```python
+```{code-cell} python
 def get_order(self, order_id: int) -> dict | None:
 ```
 
@@ -145,7 +152,7 @@ def get_order(self, order_id: int) -> dict | None:
 **What it enables:** A customer views all their past orders.
 
 **Signature:**
-```python
+```{code-cell} python
 def get_order_history(self, customer_id: int) -> list[dict]:
 ```
 
@@ -161,7 +168,7 @@ def get_order_history(self, customer_id: int) -> list[dict]:
 **What it enables:** The business sees which product categories are generating revenue, to inform inventory and marketing decisions.
 
 **Signature:**
-```python
+```{code-cell} python
 def revenue_by_category(self) -> list[dict]:
 ```
 

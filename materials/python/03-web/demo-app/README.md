@@ -1,6 +1,6 @@
 # FastAPI Demo App
 
-A self-contained product catalog API that demonstrates the FastAPI and Pydantic concepts from the Web APIs lesson. No database setup required -- all data is stored in memory while the server is running.
+A self-contained product catalog API that demonstrates the FastAPI and Pydantic concepts from the Web APIs lesson. No database setup required — all data is stored in memory while the server is running.
 
 ## What's in This App
 
@@ -13,20 +13,9 @@ A self-contained product catalog API that demonstrates the FastAPI and Pydantic 
 | `/orders` | GET | Lists all orders placed this session |
 | `/orders/{id}` | GET | Returns one order by ID |
 
-## Setup
-
-```bash
-# From this directory (demo-app/)
-pip install fastapi "uvicorn[standard]" httpx
-```
-
-Or with `uv`:
-
-```bash
-uv sync
-```
-
 ## Run
+
+Start the web lab (`make lab-web`), then from inside the workspace:
 
 ```bash
 uvicorn main:app --reload
@@ -92,11 +81,11 @@ Send an order with `quantity: 0`:
 }
 ```
 
-Observe the `422 Unprocessable Entity` response from Pydantic validation -- `quantity must be at least 1`.
+Observe the `422 Unprocessable Entity` response from Pydantic validation — `quantity must be at least 1`.
 
 ## What to Notice
 
-- **Pydantic validation fires before your code** -- a `422` response means the request body was malformed. FastAPI handles this automatically.
-- **`response_model` shapes the output** -- the route for `GET /products` returns raw dicts internally, but FastAPI filters and validates them through `ProductResponse` before sending.
-- **Stock is shared state** -- place two orders and check that stock decrements accumulate. Refresh the page (or restart the server) to reset.
-- **Swagger UI is auto-generated** -- you didn't write any documentation. FastAPI generated it from your type hints and docstrings.
+- **Pydantic validation fires before your code** — a `422` response means the request body was malformed. FastAPI handles this automatically.
+- **`response_model` shapes the output** — the route for `GET /products` returns raw dicts internally, but FastAPI filters and validates them through `ProductResponse` before sending.
+- **Stock is shared state** — place two orders and check that stock decrements accumulate. Restart the server to reset.
+- **Swagger UI is auto-generated** — you didn't write any documentation. FastAPI generated it from your type hints and docstrings.

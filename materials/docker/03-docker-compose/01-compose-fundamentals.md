@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Docker Compose Fundamentals
 
 ## Overview
@@ -459,7 +466,7 @@ redis==5.0.1
 ```
 
 **app/app.py:**
-```python
+```{code-cell} python
 from fastapi import FastAPI
 import psycopg2
 import redis

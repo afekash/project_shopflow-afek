@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Consistent Hashing
 
 ## The Problem
@@ -114,7 +121,7 @@ Adding a physical node still moves only ~1/N of keys in total, but the moved key
 
 ### Implementation Sketch
 
-```python
+```{code-cell} python
 import hashlib
 import bisect
 

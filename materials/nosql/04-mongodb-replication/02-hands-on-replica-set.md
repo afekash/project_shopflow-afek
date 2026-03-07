@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Hands-On: Replica Set
 
 ## Setup
@@ -8,7 +15,7 @@ All infrastructure is in `demo-app/replica-set/`. Check out the README.md file f
 
 All exercises use pymongo. Run this cell once before starting:
 
-```python
+```{code-cell} python
 from pymongo import MongoClient, ReadPreference
 from pymongo.write_concern import WriteConcern
 import time, datetime, pprint
@@ -22,7 +29,7 @@ db = client["demo"]
 
 Connect to the primary and examine the replica set:
 
-```python
+```{code-cell} python
 # View the replica set configuration
 config = client.admin.command("replSetGetConfig")["config"]
 print(f"Replica set: {config['_id']}")
@@ -32,7 +39,7 @@ for m in config["members"]:
 # Higher priority = more likely to be elected primary
 ```
 
-```python
+```{code-cell} python
 # View the current status of all members
 status = client.admin.command("replSetGetStatus")
 for m in status["members"]:
@@ -53,7 +60,7 @@ mongo3:27019         state=SECONDARY   health=1.0
 
 Check replication lag — how far secondaries lag behind the primary:
 
-```python
+```{code-cell} python
 status = client.admin.command("replSetGetStatus")
 primary_ts = next(
     m["optime"]["ts"] for m in status["members"] if m["stateStr"] == "PRIMARY"
@@ -70,14 +77,14 @@ for m in status["members"]:
 
 **Step 1**: Verify which node is the primary:
 
-```python
+```{code-cell} python
 status = client.admin.command("isMaster")
 print(status["primary"])  # should show "mongo1:27017"
 ```
 
 **Step 2**: Insert a document on the primary:
 
-```python
+```{code-cell} python
 result = db.events.insert_one({
     "type": "page_view",
     "user": "alice",
@@ -89,7 +96,7 @@ print("Inserted:", result.inserted_id)
 
 **Step 3**: Read the same document from a secondary:
 
-```python
+```{code-cell} python
 # By default the driver reads from the primary. Force a secondary read:
 secondary_db = client.get_database("demo", read_preference=ReadPreference.SECONDARY)
 
@@ -104,7 +111,7 @@ print(docs[0])
 
 **Step 4**: Observe replication lag under heavy write load:
 
-```python
+```{code-cell} python
 # Rapid bulk insert on the primary
 batch = [{"i": i, "ts": datetime.datetime.now(datetime.UTC)} for i in range(10_000)]
 db.events.insert_many(batch)
@@ -129,7 +136,7 @@ for m in status["members"]:
 
 **Step 1**: Start a Python status watch loop in a separate cell, then kill the primary:
 
-```python
+```{code-cell} python
 # Run this in one cell — it will print status every second
 # Stop it with the kernel interrupt (■) after you see the new primary elected
 for _ in range(60):
@@ -156,7 +163,7 @@ The election typically completes in **10-20 seconds**.
 
 **Step 3**: Verify data survived and write to the new primary:
 
-```python
+```{code-cell} python
 # pymongo auto-discovers the new primary — no reconnect needed
 print("Primary now:", client.primary)
 
@@ -176,7 +183,7 @@ docker compose start mongo1
 
 Wait ~15 seconds for mongo1 to sync, then verify it caught up:
 
-```python
+```{code-cell} python
 time.sleep(15)
 
 # Connect directly to the old primary (now a secondary) to confirm it caught up
@@ -195,7 +202,7 @@ print("Post-failover write visible on rejoined node:", doc is not None)
 
 **Goal**: Demonstrate read routing across replica set members.
 
-```python
+```{code-cell} python
 def served_by(cursor):
     """Return '(host:port, isPrimary=True/False)' for the node that ran this cursor."""
     addr = cursor.address           # (host, port) of the node PyMongo chose
@@ -230,7 +237,7 @@ print(f"Secondary-preferred   — served by: {node}  (isPrimary: {primary})")
 
 **Goal**: Measure the latency difference between `w=1` and `w="majority"`.
 
-```python
+```{code-cell} python
 N = 100
 
 # w=1 — only the primary acknowledges before returning
@@ -260,7 +267,7 @@ print(f"Overhead per op: +{(t3-t1)/N:.1f} ms")
 
 **Step 1**: Perform a controlled sequence of writes so the oplog entries are predictable:
 
-```python
+```{code-cell} python
 import datetime
 
 db.oplog_demo.drop()   # start clean
@@ -277,7 +284,7 @@ db.oplog_demo.delete_one({"item": "widget"})
 
 **Step 2**: Read the oplog entries that correspond to those three writes:
 
-```python
+```{code-cell} python
 oplog = client.local["oplog.rs"]
 
 # Grab the 3 most recent entries on demo.oplog_demo (newest first, then reverse for readability)
@@ -307,7 +314,7 @@ for entry in recent:
 
 Check the oplog window — how far back in time the oplog covers:
 
-```python
+```{code-cell} python
 oplog = client.local["oplog.rs"]
 first = oplog.find_one(sort=[("$natural", 1)])
 last  = oplog.find_one(sort=[("$natural", -1)])

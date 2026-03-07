@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Collections
 
 Python provides four primary collection types: `list`, `tuple`, `dict`, and `set`. Each has distinct characteristics that make it suitable for different scenarios. Understanding when to use which collection is crucial for writing efficient, readable code.
@@ -6,7 +13,7 @@ Python provides four primary collection types: `list`, `tuple`, `dict`, and `set
 
 Lists are Python's most versatile collection type: ordered, mutable, and can contain any type of element.
 
-```python
+```{code-cell} python
 # Creating lists
 empty = []
 numbers = [1, 2, 3, 4, 5]
@@ -20,7 +27,7 @@ print(f"Nested: {nested}")
 
 ### Common List Operations
 
-```python
+```{code-cell} python
 # Adding elements
 fruits = ["apple", "banana"]
 fruits.append("cherry")  # Add to end: O(1)
@@ -56,7 +63,7 @@ print(f"'apple' in fruits: {'apple' in fruits}")  # O(n)
 
 List comprehensions provide a concise way to create lists:
 
-```python
+```{code-cell} python
 # Traditional loop
 squares = []
 for x in range(10):
@@ -88,7 +95,7 @@ print(f"Multiplication table:\n{matrix}")
 
 ### Performance Characteristics
 
-```python
+```{code-cell} python
 import time
 
 # Append is O(1) - fast even for large lists
@@ -138,7 +145,7 @@ def process_records():
 
 Tuples are like lists but immutable. Once created, they cannot be modified.
 
-```python
+```{code-cell} python
 # Creating tuples
 empty = ()
 single = (42,)  # Note the comma - (42) is just an int!
@@ -161,7 +168,7 @@ print(f"{name} is a {age}-year-old {role}")
 
 ### Tuple Unpacking
 
-```python
+```{code-cell} python
 # Unpacking tuples
 coordinates = (10, 20)
 x, y = coordinates
@@ -195,7 +202,7 @@ for name, age in people:
 
 Named tuples provide attribute access while keeping tuple immutability:
 
-```python
+```{code-cell} python
 from collections import namedtuple
 
 # Define a named tuple type
@@ -226,7 +233,7 @@ print(f"Original: {alice.age}, Modified: {alice_older.age}")
 
 **When to use tuples instead of lists:**
 
-```python
+```{code-cell} python
 # 1. Function return values (multiple values)
 def get_user_info():
     return ("Alice", 25, "Engineer")
@@ -255,7 +262,7 @@ print(f"Tuple size: {sys.getsizeof((1, 2, 3))} bytes")
 
 Dictionaries map keys to values with O(1) average lookup time. As of Python 3.7+, they preserve insertion order.
 
-```python
+```{code-cell} python
 # Creating dictionaries
 empty = {}
 user = {"name": "Alice", "age": 25, "role": "Engineer"}
@@ -283,7 +290,7 @@ print(f"Salary with default: {salary}")  # 0
 
 ### Common Dictionary Operations
 
-```python
+```{code-cell} python
 # Adding/updating entries
 config = {"host": "localhost", "port": 5432}
 config["database"] = "mydb"  # Add new key
@@ -325,7 +332,7 @@ print(f"Merged (old syntax): {merged}")
 
 ### Dictionary Comprehensions
 
-```python
+```{code-cell} python
 # Create dict from lists
 keys = ["name", "age", "role"]
 values = ["Alice", 25, "Engineer"]
@@ -362,7 +369,7 @@ print(f"Temps by city: {by_city}")
 
 ### defaultdict for Cleaner Grouping
 
-```python
+```{code-cell} python
 from collections import defaultdict
 
 # Same grouping, cleaner code
@@ -391,7 +398,7 @@ print(f"Counts: {dict(counter)}")
 
 Dictionaries use hash tables for O(1) lookup:
 
-```python
+```{code-cell} python
 # Keys must be hashable
 key = "name"
 print(f"Hash of '{key}': {hash(key)}")
@@ -417,7 +424,7 @@ print(f"Locations: {locations}")
 
 **Real-world use cases:**
 
-```python
+```{code-cell} python
 # 1. Configuration objects
 config = {
     "database": {
@@ -463,7 +470,7 @@ print(f"Cache: {cache}")
 
 Sets store unique elements with O(1) membership testing.
 
-```python
+```{code-cell} python
 # Creating sets
 empty = set()  # Note: {} creates an empty dict, not set!
 numbers = {1, 2, 3, 4, 5}
@@ -479,7 +486,7 @@ print(f"Unique items: {unique}")
 
 ### Set Operations
 
-```python
+```{code-cell} python
 # Mathematical set operations
 a = {1, 2, 3, 4, 5}
 b = {4, 5, 6, 7, 8}
@@ -509,7 +516,7 @@ print(f"{y} is superset of {x}: {y.issuperset(x)}")
 
 ### When to Use Sets
 
-```python
+```{code-cell} python
 # 1. Deduplication
 user_ids = [1, 2, 3, 2, 1, 4, 3, 5]
 unique_ids = list(set(user_ids))
@@ -554,7 +561,7 @@ print(f"Unique cities: {unique_cities}")
 
 ### frozenset: Immutable Sets
 
-```python
+```{code-cell} python
 # frozenset is to set what tuple is to list
 immutable = frozenset([1, 2, 3])
 print(f"Frozenset: {immutable}")
@@ -582,7 +589,7 @@ print(f"Set dict: {set_dict}")
 
 ### Choosing the Right Collection
 
-```python
+```{code-cell} python
 # Use list when:
 # - You need ordering
 # - Elements can be duplicates
@@ -612,7 +619,7 @@ valid_codes = {"200", "201", "204"}
 
 ## At Scale: Memory and Performance
 
-```python
+```{code-cell} python
 import sys
 
 # Memory usage comparison

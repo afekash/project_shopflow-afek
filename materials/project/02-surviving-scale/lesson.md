@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Phase 2: Surviving Scale
 
 ## The Situation
@@ -67,7 +74,7 @@ Four methods. Two are additions to existing behavior; two are new capabilities.
 This is called at startup and after seeding products. It reads the current stock quantities from Postgres and writes them into a fast counter store so that inventory checks and decrements can happen there instead.
 
 **Signature:**
-```python
+```{code-cell} python
 def init_inventory_counters(self) -> None:
 ```
 
@@ -87,7 +94,7 @@ The behavior from Phase 1 is unchanged from the caller's perspective — same in
 When product data is updated, the cache entry must be explicitly removed so the next read fetches fresh data.
 
 **Signature:** (unchanged from Phase 1)
-```python
+```{code-cell} python
 def get_product(self, product_id: int) -> dict | None:
 ```
 
@@ -107,7 +114,7 @@ def get_product(self, product_id: int) -> dict | None:
 Called whenever a product is updated in the primary store. The next read for that product will go directly to the primary store and repopulate the cache.
 
 **Signature:**
-```python
+```{code-cell} python
 def invalidate_product_cache(self, product_id: int) -> None:
 ```
 
@@ -124,7 +131,7 @@ def invalidate_product_cache(self, product_id: int) -> None:
 Called every time a customer views a product. The list is bounded: only the 10 most recent views are kept. The most recently viewed product is always first.
 
 **Signature:**
-```python
+```{code-cell} python
 def record_product_view(self, customer_id: int, product_id: int) -> None:
 ```
 
@@ -140,7 +147,7 @@ def record_product_view(self, customer_id: int, product_id: int) -> None:
 **What it enables:** Reading a customer's recent product history.
 
 **Signature:**
-```python
+```{code-cell} python
 def get_recently_viewed(self, customer_id: int) -> list[int]:
 ```
 

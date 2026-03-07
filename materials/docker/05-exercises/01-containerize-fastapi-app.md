@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Exercise: Containerize a FastAPI App
 
 ## Overview
@@ -25,7 +32,7 @@ fastapi-app/
 ```
 
 **main.py:**
-```python
+```{code-cell} python
 from fastapi import FastAPI
 from pydantic import BaseModel
 import datetime

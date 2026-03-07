@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # ACID vs BASE
 
 ## The Problem
@@ -39,7 +46,7 @@ No transaction ever sees money debited but not credited.
 
 **Durability**: Once a transaction is committed, it survives crashes. The database uses a write-ahead log (see [Write-Ahead Logs](../05-replication-and-availability/03-write-ahead-logs.md)) to ensure committed data can always be recovered.
 
-```python
+```{code-cell} python
 # ACID transaction: bank transfer
 # Either both operations commit, or neither does
 BEGIN TRANSACTION;
@@ -65,7 +72,7 @@ Coined as a deliberate contrast to ACID:
 
 **Eventually consistent**: Given no new updates, all nodes will eventually converge to the same state. There is no guarantee of when -- it could be milliseconds or seconds -- but eventually all nodes agree.
 
-```python
+```{code-cell} python
 # BASE: social media post like (Cassandra-style)
 # Write to the local node; other nodes sync asynchronously
 INSERT INTO post_likes (post_id, user_id, liked_at)

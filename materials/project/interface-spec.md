@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Interface Specification: E-Commerce Polyglot Data Pipeline
 
 This document is the contract between the scaffold and the test/seed agents. It defines:
@@ -131,7 +138,7 @@ Business rule violations raise `ValueError`. Missing resources return `None` (si
 
 ### Constructor
 
-```python
+```{code-cell} python
 class DBAccess:
     def __init__(
         self,
@@ -148,17 +155,17 @@ class DBAccess:
 
 #### `create_order`
 
-```python
+```{code-cell} python
 def create_order(self, customer_id: int, items: list[dict]) -> dict:
 ```
 
 **Input `items` shape:**
-```python
+```{code-cell} python
 [{"product_id": int, "quantity": int}, ...]
 ```
 
 **Returns:**
-```python
+```{code-cell} python
 {
     "order_id": int,
     "customer_id": int,
@@ -199,12 +206,12 @@ def create_order(self, customer_id: int, items: list[dict]) -> dict:
 
 #### `get_product`
 
-```python
+```{code-cell} python
 def get_product(self, product_id: int) -> dict | None:
 ```
 
 **Returns:**
-```python
+```{code-cell} python
 {
     "id": int,
     "name": str,
@@ -219,7 +226,7 @@ def get_product(self, product_id: int) -> dict | None:
 ```
 
 **`category_fields` by category:**
-```python
+```{code-cell} python
 # electronics
 {"cpu": str, "ram_gb": int, "storage_gb": int, "screen_inches": float}
 
@@ -252,7 +259,7 @@ def get_product(self, product_id: int) -> dict | None:
 
 #### `search_products`
 
-```python
+```{code-cell} python
 def search_products(
     self,
     category: str | None = None,
@@ -272,7 +279,7 @@ def search_products(
 
 #### `save_order_snapshot`
 
-```python
+```{code-cell} python
 def save_order_snapshot(
     self,
     order_id: int,
@@ -285,7 +292,7 @@ def save_order_snapshot(
 ```
 
 **Input shapes:**
-```python
+```{code-cell} python
 # customer
 {"id": int, "name": str, "email": str}
 
@@ -296,7 +303,7 @@ def save_order_snapshot(
 **Returns:** The MongoDB `inserted_id` as a string (str of ObjectId).
 
 **Side effect:** Inserts one document into the `order_snapshots` collection:
-```python
+```{code-cell} python
 {
     "order_id": int,
     "customer": {"id": int, "name": str, "email": str},
@@ -316,13 +323,13 @@ Called internally by `create_order` after the Postgres transaction commits. Not 
 
 #### `get_order`
 
-```python
+```{code-cell} python
 def get_order(self, order_id: int) -> dict | None:
 ```
 
 **Returns:** The order snapshot document (same shape as stored, minus `_id`), or `None` if not found.
 
-```python
+```{code-cell} python
 {
     "order_id": int,
     "customer": {"id": int, "name": str, "email": str},
@@ -339,7 +346,7 @@ Reads from MongoDB `order_snapshots` collection, filtering by `order_id` field.
 
 #### `get_order_history`
 
-```python
+```{code-cell} python
 def get_order_history(self, customer_id: int) -> list[dict]:
 ```
 
@@ -353,12 +360,12 @@ Reads from MongoDB `order_snapshots` collection, filtering by `customer.id == cu
 
 #### `revenue_by_category`
 
-```python
+```{code-cell} python
 def revenue_by_category(self) -> list[dict]:
 ```
 
 **Returns:**
-```python
+```{code-cell} python
 [
     {"category": str, "total_revenue": float},
     ...
@@ -383,7 +390,7 @@ ORDER BY total_revenue DESC
 
 #### `init_inventory_counters`
 
-```python
+```{code-cell} python
 def init_inventory_counters(self) -> None:
 ```
 
@@ -395,7 +402,7 @@ Called at application startup (from `db.py` init) and optionally by the seed scr
 
 #### `invalidate_product_cache`
 
-```python
+```{code-cell} python
 def invalidate_product_cache(self, product_id: int) -> None:
 ```
 
@@ -405,7 +412,7 @@ def invalidate_product_cache(self, product_id: int) -> None:
 
 #### `record_product_view`
 
-```python
+```{code-cell} python
 def record_product_view(self, customer_id: int, product_id: int) -> None:
 ```
 
@@ -417,7 +424,7 @@ def record_product_view(self, customer_id: int, product_id: int) -> None:
 
 #### `get_recently_viewed`
 
-```python
+```{code-cell} python
 def get_recently_viewed(self, customer_id: int) -> list[int]:
 ```
 
@@ -431,12 +438,12 @@ def get_recently_viewed(self, customer_id: int) -> list[int]:
 
 #### `seed_recommendation_graph`
 
-```python
+```{code-cell} python
 def seed_recommendation_graph(self, orders: list[dict]) -> None:
 ```
 
 **Input `orders` shape:**
-```python
+```{code-cell} python
 [
     {"order_id": int, "product_ids": [int, ...]},
     ...
@@ -462,12 +469,12 @@ Called by the seed script after loading historical orders.
 
 #### `get_recommendations`
 
-```python
+```{code-cell} python
 def get_recommendations(self, product_id: int, limit: int = 5) -> list[dict]:
 ```
 
 **Returns:**
-```python
+```{code-cell} python
 [
     {"product_id": int, "name": str, "score": int},  # score = BOUGHT_TOGETHER edge weight
     ...
@@ -531,7 +538,7 @@ LIMIT $limit
 
 ## Pydantic Request Models
 
-```python
+```{code-cell} python
 # requests.py
 
 class OrderItemRequest(BaseModel):
@@ -547,7 +554,7 @@ class CreateOrderRequest(BaseModel):
 
 ## Pydantic Response Models
 
-```python
+```{code-cell} python
 # responses.py
 
 class MessageResponse(BaseModel):
@@ -721,7 +728,7 @@ Students implement all models in `postgres_models.py` using SQLAlchemy 2.0 decla
 
 One document per product. All five categories coexist in this collection.
 
-```python
+```{code-cell} python
 {
     "_id": ObjectId,          # auto-generated by MongoDB
     "id": int,                # matches Postgres products.id — used for cross-DB joins
@@ -742,7 +749,7 @@ Index: `{"id": 1}` (unique) — for efficient `find_one({"id": product_id})` loo
 
 One document per order. Fully denormalized — contains customer and product data at time of order.
 
-```python
+```{code-cell} python
 {
     "_id": ObjectId,
     "order_id": int,          # matches Postgres orders.id

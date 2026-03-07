@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Images and Dockerfiles
 
 ## Overview
@@ -365,7 +372,7 @@ my-fastapi-app/
 ```
 
 **app.py:**
-```python
+```{code-cell} python
 from fastapi import FastAPI
 
 app = FastAPI()

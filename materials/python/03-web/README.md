@@ -4,6 +4,10 @@ A focused introduction to HTTP APIs, FastAPI, and Pydantic. This module covers j
 
 **Total Duration:** ~25 minutes
 
+```{note}
+This module requires the web lab. Run `make lab-web` before starting.
+```
+
 ## Learning Objectives
 
 By the end of this module, you will:
@@ -28,26 +32,6 @@ By the end of this module, you will:
 | [04 - Connecting to the Project](04-connecting-to-the-project.md) | ~5 min | Project context | Full request flow, what's scaffolded, where DBAccess fits |
 
 **Total:** ~27 minutes
-
-## Demo App
-
-A fully runnable FastAPI application that demonstrates all concepts from this module -- no database required.
-
-```
-demo-app/
-├── main.py          # FastAPI app with products and orders endpoints
-├── pyproject.toml   # Dependencies
-└── README.md        # Setup and guided exercises
-```
-
-```bash
-# From demo-app/
-pip install fastapi "uvicorn[standard]" httpx
-uvicorn main:app --reload
-# Open http://localhost:8000/docs
-```
-
-See [demo-app/README.md](demo-app/README.md) for guided exercises using Swagger UI.
 
 ## Course Navigation
 

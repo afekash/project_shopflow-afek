@@ -1,0 +1,146 @@
+# MongoDB sharded cluster lab: config servers + 2 shards + mongos router.
+# Backs materials/nosql/05-mongodb-sharding/.
+# Merges with labs/base/compose.yml — do not duplicate the workspace service here.
+# After startup, initialize: make sharded-init
+#
+# Topology:
+#   config server replica set: cfg1, cfg2, cfg3
+#   shard 1 replica set:       shard1a, shard1b, shard1c
+#   shard 2 replica set:       shard2a, shard2b, shard2c
+#   mongos router:             mongos (application entry point)
+#
+# Connection: mongodb://mongos:27017
+# Usage: make lab-sharded
+
+services:
+  workspace:
+    build:
+      args:
+        LAB: sharded
+    environment:
+      - MONGO_URI=mongodb://mongos:27017
+    depends_on:
+      - mongos
+
+  # ─── Config Server Replica Set ──────────────────────────────────────────────
+  cfg1:
+    image: mongo:7
+    container_name: cfg1
+    hostname: cfg1
+    command: mongod --configsvr --replSet configrs --port 27017 --bind_ip_all
+    ports:
+      - "27100:27017"
+    volumes:
+      - shd_cfg1_data:/data/db
+
+  cfg2:
+    image: mongo:7
+    container_name: cfg2
+    hostname: cfg2
+    command: mongod --configsvr --replSet configrs --port 27017 --bind_ip_all
+    ports:
+      - "27101:27017"
+    volumes:
+      - shd_cfg2_data:/data/db
+
+  cfg3:
+    image: mongo:7
+    container_name: cfg3
+    hostname: cfg3
+    command: mongod --configsvr --replSet configrs --port 27017 --bind_ip_all
+    ports:
+      - "27102:27017"
+    volumes:
+      - shd_cfg3_data:/data/db
+
+  # ─── Shard 1 Replica Set ────────────────────────────────────────────────────
+  shard1a:
+    image: mongo:7
+    container_name: shard1a
+    hostname: shard1a
+    command: mongod --shardsvr --replSet shard1rs --port 27017 --bind_ip_all
+    ports:
+      - "27110:27017"
+    volumes:
+      - shd_shard1a_data:/data/db
+
+  shard1b:
+    image: mongo:7
+    container_name: shard1b
+    hostname: shard1b
+    command: mongod --shardsvr --replSet shard1rs --port 27017 --bind_ip_all
+    ports:
+      - "27111:27017"
+    volumes:
+      - shd_shard1b_data:/data/db
+
+  shard1c:
+    image: mongo:7
+    container_name: shard1c
+    hostname: shard1c
+    command: mongod --shardsvr --replSet shard1rs --port 27017 --bind_ip_all
+    ports:
+      - "27112:27017"
+    volumes:
+      - shd_shard1c_data:/data/db
+
+  # ─── Shard 2 Replica Set ────────────────────────────────────────────────────
+  shard2a:
+    image: mongo:7
+    container_name: shard2a
+    hostname: shard2a
+    command: mongod --shardsvr --replSet shard2rs --port 27017 --bind_ip_all
+    ports:
+      - "27120:27017"
+    volumes:
+      - shd_shard2a_data:/data/db
+
+  shard2b:
+    image: mongo:7
+    container_name: shard2b
+    hostname: shard2b
+    command: mongod --shardsvr --replSet shard2rs --port 27017 --bind_ip_all
+    ports:
+      - "27121:27017"
+    volumes:
+      - shd_shard2b_data:/data/db
+
+  shard2c:
+    image: mongo:7
+    container_name: shard2c
+    hostname: shard2c
+    command: mongod --shardsvr --replSet shard2rs --port 27017 --bind_ip_all
+    ports:
+      - "27122:27017"
+    volumes:
+      - shd_shard2c_data:/data/db
+
+  # ─── mongos Router ──────────────────────────────────────────────────────────
+  mongos:
+    image: mongo:7
+    container_name: mongos
+    hostname: mongos
+    command: mongos --configdb configrs/cfg1:27017,cfg2:27017,cfg3:27017 --port 27017 --bind_ip_all
+    ports:
+      - "27017:27017"
+    depends_on:
+      - cfg1
+      - cfg2
+      - cfg3
+      - shard1a
+      - shard1b
+      - shard1c
+      - shard2a
+      - shard2b
+      - shard2c
+
+volumes:
+  shd_cfg1_data:
+  shd_cfg2_data:
+  shd_cfg3_data:
+  shd_shard1a_data:
+  shd_shard1b_data:
+  shd_shard1c_data:
+  shd_shard2a_data:
+  shd_shard2b_data:
+  shd_shard2c_data:

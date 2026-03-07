@@ -1,0 +1,45 @@
+{
+  "name": "John Bryce Data Engineering",
+  "dockerComposeFile": "../labs/base/compose.yml",
+  "service": "workspace",
+  "workspaceFolder": "/workspace",
+
+  "forwardPorts": [
+    3000,
+    8888
+  ],
+
+  "portsAttributes": {
+    "3000": {
+      "label": "MyST Docs",
+      "onAutoForward": "openBrowser"
+    },
+    "8888": {
+      "label": "Jupyter Server",
+      "onAutoForward": "silent"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter",
+        "ExecutableBookProject.myst-highlight",
+        "redhat.vscode-yaml",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "editor.formatOnSave": true,
+        "files.watcherExclude": {
+          "**/_build/**": true,
+          "**/.venv/**": true
+        }
+      }
+    }
+  },
+
+  "postStartCommand": "echo 'Workspace ready. Run: make docs (for MyST site) or make lab-<name> (for a specific lab environment)'"
+}

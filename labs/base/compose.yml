@@ -1,0 +1,27 @@
+# Base lab: workspace container only.
+# Provides MyST docs server (port 3000) and Jupyter server (port 8888).
+# All lab files are layered on top of this via docker compose -f merging.
+#
+# Usage: make docs            (standalone)
+# Usage: make lab-<name>      (merged with labs/<name>/compose.yml)
+
+services:
+  workspace:
+    container_name: workspace
+    build:
+      context: ../..
+      dockerfile: labs/base/Dockerfile
+      args:
+        LAB: base
+    volumes:
+      - ../..:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /workspace
+    ports:
+      - "3000:3000"
+      - "3100:3100"
+      - "8888:8888"
+    environment:
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-}
+    command: ["bash", "labs/base/init.sh"]
+    restart: unless-stopped

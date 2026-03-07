@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Indexes and Performance
 
 ## Why Indexes Matter
@@ -38,7 +45,7 @@ graph TD
 
 Index on one field. Supports equality, range, and sort on that field.
 
-```python
+```{code-cell} python
 # Create an index on the price field (1 = ascending, -1 = descending)
 db.products.create_index([("price", 1)])
 
@@ -52,7 +59,7 @@ list(db.products.find({}).sort("price", 1))
 
 Index on multiple fields. The order of fields matters significantly.
 
-```python
+```{code-cell} python
 import pymongo
 
 # Index on category (ascending) + price (descending)
@@ -72,7 +79,7 @@ list(db.products.find({"price": {"$gt": 500}}))
 2. **Sort** fields come next
 3. **Range** fields come last (fields with `$gt`, `$lt`, `$in`)
 
-```python
+```{code-cell} python
 # Query: find electronics, sorted by name, with price > 500
 # Optimal compound index follows ESR:
 db.products.create_index([
@@ -86,7 +93,7 @@ db.products.create_index([
 
 When you index a field that contains an array, MongoDB creates index entries for each element in the array. This allows efficient queries like "find documents where array contains value X."
 
-```python
+```{code-cell} python
 # Products have a tags array: ["laptop", "gaming", "portable"]
 db.products.create_index([("tags", 1)])   # automatically a multikey index
 
@@ -100,7 +107,7 @@ One compound index can only have one multikey field.
 
 Instead of the natural value, stores the hash of the field value. Supports only equality queries (no range, no sort). Used primarily as shard keys (covered in the sharding module).
 
-```python
+```{code-cell} python
 db.users.create_index([("user_id", "hashed")])
 
 # Supports equality:
@@ -114,7 +121,7 @@ db.users.find_one({"user_id": "user_42"})
 
 Automatically deletes documents after a specified time period. A background process runs every 60 seconds and removes expired documents.
 
-```python
+```{code-cell} python
 # Delete session documents 30 minutes after their created_at time
 db.sessions.create_index([("created_at", 1)], expireAfterSeconds=1800)
 
@@ -126,7 +133,7 @@ db.events.create_index([("expires_at", 1)], expireAfterSeconds=0)
 
 Enables full-text search across string fields.
 
-```python
+```{code-cell} python
 db.articles.create_index([("title", "text"), ("content", "text")])
 list(db.articles.find({"$text": {"$search": "mongodb replication"}}))
 ```
@@ -135,7 +142,7 @@ list(db.articles.find({"$text": {"$search": "mongodb replication"}}))
 
 `explain()` is the most important tool for understanding index usage and query performance. Always use it before and after adding indexes in production.
 
-```python
+```{code-cell} python
 import pprint
 
 plan = db.products.find(
@@ -190,7 +197,7 @@ This exercise demonstrates the difference between a collection scan and an index
 
 ### Setup: Connect and Generate Test Data
 
-```python
+```{code-cell} python
 from pymongo import MongoClient
 import random
 import datetime
@@ -228,7 +235,7 @@ print(db.products.count_documents({}), "documents inserted")  # should be 100,00
 
 ### Step 1: Query Without an Index (COLLSCAN)
 
-```python
+```{code-cell} python
 # Check existing indexes — only the default _id index should be present
 print(db.products.index_information())
 
@@ -257,7 +264,7 @@ Look at the output:
 
 ### Step 2: Add an Index and Compare
 
-```python
+```{code-cell} python
 # Create a compound index following the ESR rule:
 # category (equality) comes before price (range)
 db.products.create_index([("category", 1), ("price", 1)])
@@ -286,7 +293,7 @@ Now observe:
 
 A **covered query** is one where the index contains all the fields the query needs — MongoDB never needs to fetch the actual documents.
 
-```python
+```{code-cell} python
 # This index covers: category (filter), price (filter), name (projection)
 db.products.create_index([("category", 1), ("price", 1), ("name", 1)])
 
@@ -306,7 +313,7 @@ Look for `Docs examined: 0` — MongoDB served the entire result from the index 
 
 ### Step 4: Observe the Write Cost
 
-```python
+```{code-cell} python
 # Drop all non-_id indexes to get a clean baseline
 db.products.drop_indexes()
 
@@ -347,7 +354,7 @@ You'll see inserts are slower with indexes — the B-tree must be updated for ev
 - Use `explain()` to verify that your queries use the index you created
 - Audit unused indexes with `db.collection.aggregate([{$indexStats: {}}])`
 
-```python
+```{code-cell} python
 # Find indexes that haven't been used (low or zero accesses.ops)
 for stat in db.products.aggregate([{"$indexStats": {}}]):
     print(stat["name"], "→ ops:", stat["accesses"]["ops"])
@@ -359,7 +366,7 @@ for stat in db.products.aggregate([{"$indexStats": {}}]):
 
 This becomes important in the sharding module -- if your shard key is a monotonically increasing value (like a timestamp or auto-increment ID), all new writes land on the same shard. A hashed shard key distributes the writes evenly.
 
-```python
+```{code-cell} python
 # Preview: hashed index as shard key ensures even write distribution
 db.events.create_index([("user_id", "hashed")])
 # sh.shardCollection("mydb.events", {"user_id": "hashed"})  ← run in mongosh as admin

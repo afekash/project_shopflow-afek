@@ -1,6 +1,13 @@
+---
+kernelspec:
+  name: python3
+  display_name: Python 3
+  language: python
+---
+
 # Connecting to the Project
 
-Now that you understand endpoints, routes, and Pydantic models, here's how the capstone project uses them -- and exactly where your code fits in.
+Now that you understand endpoints, routes, and Pydantic models, here's how the capstone project uses them — and exactly where your code fits in.
 
 ## The Full Request Flow
 
@@ -29,13 +36,13 @@ DBAccess.create_order()        ◀── YOU IMPLEMENT THIS
 FastAPI serializes the return value → JSON response → back to client
 ```
 
-The web layer handles steps 1-3 automatically. Your job starts at `DBAccess.create_order()`.
+The web layer handles steps 1–3 automatically. Your job starts at `DBAccess.create_order()`.
 
 ## What the Scaffolded Route Looks Like
 
-Here's a simplified version of the `POST /orders` handler from `src/api/routes/orders.py`. Read through it -- you'll recognize all the pieces:
+Here's a simplified version of the `POST /orders` handler from `src/api/routes/orders.py`. Read through it — you'll recognize all the pieces:
 
-```python
+```{code-cell} python
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
@@ -69,14 +76,11 @@ def create_order_route(order: CreateOrderRequest):
     )
     return result
 
-# The route calls your method -- your method writes to the databases.
-# Let's verify the wiring (before you implement it, this will raise NotImplementedError):
 client = TestClient(app)
 try:
     client.post("/orders", json={"customer_id": 7, "items": [{"product_id": 1, "quantity": 2}]})
 except NotImplementedError:
-    print("Route reached DBAccess -- wiring works, method not yet implemented")
-# Result: Route reached DBAccess -- wiring works, method not yet implemented
+    print("Route reached DBAccess — wiring works, method not yet implemented")
 ```
 
 The HTTP layer, Pydantic parsing, and routing are invisible to you. You only implement the body of `create_order()`.
@@ -106,12 +110,6 @@ Every `DBAccess` method you implement is called by a corresponding pre-built rou
 | Test suites | Yes | `tests/` |
 | SQLAlchemy ORM models | **You build** | `src/postgres_models.py` |
 | All `DBAccess` methods | **You build** | `src/db_access.py` |
-
-## Hands-On: Run the Demo App
-
-Before working on the project, run the demo app in this module to see everything working together in a standalone FastAPI application -- no databases required.
-
-See: [demo-app/README.md](demo-app/README.md)
 
 **Navigation:**
 - **Previous**: [← Pydantic Models](03-pydantic-models.md)

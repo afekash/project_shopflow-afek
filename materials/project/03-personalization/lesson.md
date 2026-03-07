@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Phase 3: Personalization
 
 ## The Situation
@@ -59,7 +66,7 @@ For every order, every unique pair of products in that order forms a relationshi
 This method is also called by the seed script after historical orders are loaded.
 
 **Signature:**
-```python
+```{code-cell} python
 def seed_recommendation_graph(self, orders: list[dict]) -> None:
     # orders: [{"order_id": int, "product_ids": [int, ...]}, ...]
 ```
@@ -79,7 +86,7 @@ def seed_recommendation_graph(self, orders: list[dict]) -> None:
 Recommendations are ranked by co-purchase frequency: the more often two products appear together in orders, the higher the recommendation score.
 
 **Signature:**
-```python
+```{code-cell} python
 def get_recommendations(self, product_id: int, limit: int = 5) -> list[dict]:
 ```
 

@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Volumes and Networking
 
 ## Overview
@@ -302,7 +309,7 @@ my-app/
 ```
 
 **app.py:**
-```python
+```{code-cell} python
 from fastapi import FastAPI
 import psycopg2
 

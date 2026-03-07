@@ -1,0 +1,237 @@
+version: 1
+project:
+  title: Data Engineering Course
+  authors:
+    - name: John Bryce
+  keywords:
+    - data engineering
+    - databases
+    - sql
+    - nosql
+    - python
+    - docker
+  github: https://github.com/john-bryce
+  jupyter:
+    server:
+      url: http://localhost:8888/
+      token: local-dev
+    kernelName: python3
+
+  toc:
+    - file: materials/welcome.md
+
+    - file: materials/core-concepts/README.md
+      children:
+        - title: Complexity & Performance
+          children:
+            - file: materials/core-concepts/01-complexity-and-performance/01-big-o-notation.md
+            - file: materials/core-concepts/01-complexity-and-performance/02-io-and-storage-fundamentals.md
+        - title: Data Structures
+          children:
+            - file: materials/core-concepts/02-data-structures/01-hash-tables.md
+            - file: materials/core-concepts/02-data-structures/02-trees-for-storage.md
+            - file: materials/core-concepts/02-data-structures/03-lsm-trees-and-sstables.md
+            - file: materials/core-concepts/02-data-structures/04-probabilistic-structures.md
+        - title: Scaling
+          children:
+            - file: materials/core-concepts/03-scaling/01-vertical-vs-horizontal.md
+            - file: materials/core-concepts/03-scaling/02-partitioning-strategies.md
+            - file: materials/core-concepts/03-scaling/03-consistent-hashing.md
+        - title: Distributed Systems
+          children:
+            - file: materials/core-concepts/04-distributed-systems/01-cap-theorem.md
+            - file: materials/core-concepts/04-distributed-systems/02-acid-vs-base.md
+            - file: materials/core-concepts/04-distributed-systems/03-consistency-models.md
+            - file: materials/core-concepts/04-distributed-systems/04-quorum-and-tunable-consistency.md
+        - title: Replication & Availability
+          children:
+            - file: materials/core-concepts/05-replication-and-availability/01-replication-patterns.md
+            - file: materials/core-concepts/05-replication-and-availability/02-consensus-and-failover.md
+            - file: materials/core-concepts/05-replication-and-availability/03-write-ahead-logs.md
+        - title: Architecture Patterns
+          children:
+            - file: materials/core-concepts/06-architecture-patterns/01-schema-strategies.md
+            - file: materials/core-concepts/06-architecture-patterns/02-query-routing-patterns.md
+            - file: materials/core-concepts/06-architecture-patterns/03-polyglot-persistence.md
+
+    - file: materials/git/README.md
+      children:
+        - title: Fundamentals
+          children:
+            - file: materials/git/01-introduction-to-git.md
+            - file: materials/git/02-basic-commands.md
+            - file: materials/git/03-viewing-history.md
+            - file: materials/git/04-gitignore.md
+            - file: materials/git/05-undoing-changes.md
+        - title: Branching & Collaboration
+          children:
+            - file: materials/git/06-branching-basics.md
+            - file: materials/git/07-merging-and-conflicts.md
+            - file: materials/git/08-remote-basics.md
+            - file: materials/git/09-github-workflow.md
+        - title: Real-World & Tools
+          children:
+            - file: materials/git/10-git-in-real-world.md
+            - file: materials/git/11-vscode-git-guide.md
+            - file: materials/git/12-exercises.md
+
+    - file: materials/sql/README.md
+      children:
+        - title: Fundamentals
+          children:
+            - file: materials/sql/01-fundamentals/01-introduction.md
+            - file: materials/sql/01-fundamentals/02-database-setup.md
+            - file: materials/sql/01-fundamentals/03-sql-execution-order.md
+        - title: Querying Data
+          children:
+            - file: materials/sql/02-querying-data/01-select-basics.md
+            - file: materials/sql/02-querying-data/02-filtering-where.md
+            - file: materials/sql/02-querying-data/03-sorting-order-by.md
+        - title: Joining Tables
+          children:
+            - file: materials/sql/03-joining-tables/01-join-theory.md
+            - file: materials/sql/03-joining-tables/02-join-types.md
+            - file: materials/sql/03-joining-tables/03-advanced-joins.md
+            - file: materials/sql/03-joining-tables/04-normalization-vs-denormalization.md
+        - title: Aggregations
+          children:
+            - file: materials/sql/04-aggregations/01-aggregate-functions.md
+            - file: materials/sql/04-aggregations/02-group-by-having.md
+        - title: Subqueries & CTEs
+          children:
+            - file: materials/sql/05-subqueries-ctes/01-subqueries.md
+            - file: materials/sql/05-subqueries-ctes/02-cte-basics.md
+            - file: materials/sql/05-subqueries-ctes/03-recursive-ctes.md
+        - title: Window Functions
+          children:
+            - file: materials/sql/06-window-functions/01-window-basics.md
+            - file: materials/sql/06-window-functions/02-ranking-functions.md
+            - file: materials/sql/06-window-functions/03-analytic-functions.md
+            - file: materials/sql/06-window-functions/04-frames-running-totals.md
+        - title: Set Operations & DML
+          children:
+            - file: materials/sql/07-set-operations/01-set-operations.md
+            - file: materials/sql/08-data-manipulation/01-insert.md
+            - file: materials/sql/08-data-manipulation/02-update-delete.md
+            - file: materials/sql/08-data-manipulation/03-merge-upsert.md
+            - file: materials/sql/08-data-manipulation/04-transactions.md
+        - title: Schema Design
+          children:
+            - file: materials/sql/09-schema-design/01-ddl-basics.md
+            - file: materials/sql/09-schema-design/02-alter-table.md
+            - file: materials/sql/09-schema-design/03-indexes.md
+
+    - file: materials/python/01-orm/README.md
+      children:
+        - file: materials/python/01-orm/01-python-database-fundamentals.md
+        - file: materials/python/01-orm/02-orm-concepts.md
+        - file: materials/python/01-orm/03-defining-models.md
+        - file: materials/python/01-orm/04-crud-operations.md
+        - file: materials/python/01-orm/05-testing.md
+        - file: materials/python/01-orm/06-schema-migrations.md
+
+    - file: materials/python/02-python-essentials/README.md
+      children:
+        - title: Project Setup
+          children:
+            - file: materials/python/02-python-essentials/01-project-setup/01-creating-a-python-project.md
+            - file: materials/python/02-python-essentials/01-project-setup/02-dependency-management.md
+        - title: Data Structures
+          children:
+            - file: materials/python/02-python-essentials/02-data-structures/01-primitive-types.md
+            - file: materials/python/02-python-essentials/02-data-structures/02-collections.md
+        - title: Object-Oriented Python
+          children:
+            - file: materials/python/02-python-essentials/03-oop/01-object-oriented-python.md
+            - file: materials/python/02-python-essentials/03-oop/02-interfaces-in-python.md
+            - file: materials/python/02-python-essentials/03-oop/03-composition-over-inheritance.md
+        - title: Typing
+          children:
+            - file: materials/python/02-python-essentials/04-typing/01-type-hints.md
+            - file: materials/python/02-python-essentials/04-typing/02-generics.md
+        - title: Exercises
+          children:
+            - file: materials/python/02-python-essentials/05-exercises/01-python-essentials-exercises.md
+
+    - file: materials/python/03-web/README.md
+      children:
+        - file: materials/python/03-web/01-how-web-apis-work.md
+        - file: materials/python/03-web/02-fastapi-routes.md
+        - file: materials/python/03-web/03-pydantic-models.md
+        - file: materials/python/03-web/04-connecting-to-the-project.md
+
+    - file: materials/nosql/README.md
+      children:
+        - title: Introduction
+          children:
+            - file: materials/nosql/01-introduction/01-why-nosql.md
+            - file: materials/nosql/01-introduction/02-cap-theorem-and-tradeoffs.md
+        - title: NoSQL Types
+          children:
+            - file: materials/nosql/02-nosql-types/01-document-stores.md
+            - file: materials/nosql/02-nosql-types/02-key-value-stores.md
+            - file: materials/nosql/02-nosql-types/03-column-family-stores.md
+            - file: materials/nosql/02-nosql-types/04-graph-databases.md
+            - file: materials/nosql/02-nosql-types/05-choosing-the-right-database.md
+        - title: MongoDB Basics
+          children:
+            - file: materials/nosql/03-mongodb-basics/01-mongodb-overview.md
+            - file: materials/nosql/03-mongodb-basics/02-documents-and-data-modeling.md
+            - file: materials/nosql/03-mongodb-basics/03-indexes-and-performance.md
+        - title: Replication
+          children:
+            - file: materials/nosql/04-mongodb-replication/01-replica-set-architecture.md
+            - file: materials/nosql/04-mongodb-replication/02-hands-on-replica-set.md
+        - title: Sharding
+          children:
+            - file: materials/nosql/05-mongodb-sharding/01-sharding-architecture.md
+            - file: materials/nosql/05-mongodb-sharding/02-hands-on-sharded-cluster.md
+        - title: Exercises
+          children:
+            - file: materials/nosql/06-exercises/01-nosql-theory-exercises.md
+            - file: materials/nosql/06-exercises/02-mongodb-exercises.md
+
+    - file: materials/docker/README.md
+      children:
+        - title: Introduction
+          children:
+            - file: materials/docker/01-introduction/01-what-is-docker.md
+            - file: materials/docker/01-introduction/02-how-docker-works.md
+            - file: materials/docker/01-introduction/03-docker-across-platforms.md
+        - title: Working with Docker
+          children:
+            - file: materials/docker/02-working-with-docker/01-images-and-dockerfiles.md
+            - file: materials/docker/02-working-with-docker/02-running-containers.md
+            - file: materials/docker/02-working-with-docker/03-volumes-and-networking.md
+        - title: Docker Compose
+          children:
+            - file: materials/docker/03-docker-compose/01-compose-fundamentals.md
+            - file: materials/docker/03-docker-compose/02-distributed-system-demo.md
+        - title: Docker in Practice
+          children:
+            - file: materials/docker/04-docker-in-practice/01-registries-and-repositories.md
+            - file: materials/docker/04-docker-in-practice/02-cicd-and-cloud-deployment.md
+            - file: materials/docker/04-docker-in-practice/03-vscode-dev-containers.md
+        - title: Exercises
+          children:
+            - file: materials/docker/05-exercises/01-containerize-fastapi-app.md
+            - file: materials/docker/05-exercises/02-build-a-distributed-system.md
+
+    - file: materials/project/README.md
+      children:
+        - file: materials/project/00-introduction.md
+        - file: materials/project/interface-spec.md
+        - file: materials/project/01-taking-orders/lesson.md
+        - file: materials/project/02-surviving-scale/lesson.md
+        - file: materials/project/03-personalization/lesson.md
+
+site:
+  template: book-theme
+  title: Data Engineering Course
+  options:
+    favicon: ""
+    logo_text: Data Engineering
+
+  projects:
+    - path: .
+      slug: data-engineering

@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Primitive Types
 
 Python's primitive types are the building blocks of all data structures. Understanding their characteristics and edge cases helps you write correct, efficient code.
@@ -18,7 +25,7 @@ Let's explore each in detail.
 
 Unlike languages like Java or C where integers have fixed sizes (32-bit, 64-bit), Python integers can be arbitrarily large.
 
-```python
+```{code-cell} python
 # No overflow in Python
 small = 42
 large = 10 ** 100  # 1 followed by 100 zeros
@@ -39,7 +46,7 @@ print(f"Huge squared has {len(str(result))} digits")
 - IDs and primary keys
 - Exact arithmetic (money calculations should use `Decimal`, not float)
 
-```python
+```{code-cell} python
 # Common int operations in data engineering
 records_processed = 0
 batch_size = 1000
@@ -60,7 +67,7 @@ print(f"17 % 5 = {17 % 5}")   # Modulo (remainder): 2
 
 Python interns (caches) small integers for performance:
 
-```python
+```{code-cell} python
 a = 256
 b = 256
 print(f"a is b: {a is b}")  # True - same object
@@ -78,7 +85,7 @@ print(f"c is d: {c is d}")  # False (usually) - different objects
 
 Python floats are 64-bit IEEE 754 floating-point numbers. They're fast but imprecise.
 
-```python
+```{code-cell} python
 # The classic floating point problem
 a = 0.1
 b = 0.2
@@ -93,7 +100,7 @@ print(f"Actual value: {c:.20f}")  # 0.30000000000000004441
 
 **When precision matters, use `Decimal`:**
 
-```python
+```{code-cell} python
 from decimal import Decimal
 
 # For financial calculations or when exact precision is required
@@ -114,7 +121,7 @@ print(f"Float total: ${float_total}")  # Still accurate here, but can drift
 - Performance-critical code (floats are faster than Decimal)
 - Working with NumPy/pandas (they use floats internally)
 
-```python
+```{code-cell} python
 # Common float operations in data engineering
 import math
 
@@ -143,7 +150,7 @@ print(f"NaN == NaN: {not_a_number == not_a_number}")  # False!
 
 Python's `bool` type is actually a subclass of `int` with two values: `True` (1) and `False` (0).
 
-```python
+```{code-cell} python
 # True and False are integers
 print(f"True == 1: {True == 1}")    # True
 print(f"False == 0: {False == 0}")  # True
@@ -158,7 +165,7 @@ print(f"True * 5 + False = {result}")  # 5
 
 Every Python object has a boolean value in a boolean context:
 
-```python
+```{code-cell} python
 # Falsy values (evaluate to False)
 falsy_values = [
     False,
@@ -193,7 +200,7 @@ for value in truthy_values:
 
 **Practical implications:**
 
-```python
+```{code-cell} python
 # Checking if a list is empty
 items = []
 
@@ -226,7 +233,7 @@ if data is None:
 
 Python strings are immutable sequences of Unicode characters.
 
-```python
+```{code-cell} python
 # String creation
 single = 'single quotes'
 double = "double quotes"
@@ -252,7 +259,7 @@ print(f"Length of '{emoji}': {len(emoji)} characters")
 
 ### String Immutability
 
-```python
+```{code-cell} python
 # Strings cannot be modified in-place
 text = "Hello"
 
@@ -278,7 +285,7 @@ print(f"Modified: {text}")
 
 ### Common String Operations
 
-```python
+```{code-cell} python
 # String methods return new strings (immutability)
 text = "  Python Programming  "
 
@@ -321,7 +328,7 @@ print(message)
 
 ### str vs bytes
 
-```python
+```{code-cell} python
 # str is for text (Unicode characters)
 text = "Hello 🌍"
 print(f"Text: {text}, type: {type(text)}")
@@ -366,7 +373,7 @@ with open("example.txt", "rb") as f:
 
 `None` is Python's null value. There's only one `None` object in the entire Python process.
 
-```python
+```{code-cell} python
 a = None
 b = None
 
@@ -388,7 +395,7 @@ print(f"a is None: {a is None}")  # Preferred
 
 **When to use `None`:**
 
-```python
+```{code-cell} python
 # Default function arguments
 def fetch_data(limit=None):
     if limit is None:
@@ -427,7 +434,7 @@ else:
 
 Everything in Python is an object, including primitive types.
 
-```python
+```{code-cell} python
 # Primitives are objects
 x = 42
 print(f"Type: {type(x)}")
@@ -450,7 +457,7 @@ print(f"bool inherits from: {bool.__bases__}")  # bool is a subclass of int!
 
 **Object identity with `id()`:**
 
-```python
+```{code-cell} python
 # id() returns the memory address of an object
 a = [1, 2, 3]
 b = [1, 2, 3]

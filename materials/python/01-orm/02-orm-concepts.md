@@ -1,14 +1,25 @@
+---
+kernelspec:
+  name: python3
+  display_name: Python 3
+  language: python
+---
+
 # ORM Concepts: When to Use, When to Avoid
+
+```{note}
+This lesson requires the ORM lab. Run `make lab-orm` before starting.
+```
 
 ## Overview
 
-Object-Relational Mapping (ORM) frameworks sit between your application code and the database driver. They provide a higher-level abstraction, but understanding what they do - and crucially, **when not to use them** - is essential for data engineers.
+Object-Relational Mapping (ORM) frameworks sit between your application code and the database driver. They provide a higher-level abstraction — but understanding what they do, and crucially **when not to use them**, is essential for data engineers.
 
 ## What is an ORM?
 
-**ORM (Object-Relational Mapping)** is a programming technique that maps database tables to Python classes, and rows to Python objects.
+**ORM (Object-Relational Mapping)** maps database tables to Python classes, and rows to Python objects.
 
-**The key insight:** An ORM is a **wrapper around the driver**. It still sends SQL to the database - it just generates that SQL for you.
+**The key insight:** An ORM is a **wrapper around the driver**. It still sends SQL to the database — it just generates that SQL for you.
 
 ## The ORM Layer in the Stack
 
@@ -43,490 +54,331 @@ Object-Relational Mapping (ORM) frameworks sit between your application code and
 └─────────────────────────────────────────────────────┘
 ```
 
-**Critical understanding:** The ORM doesn't talk directly to the database. It uses the driver underneath, just like your raw SQL code does.
+**Critical understanding:** The ORM doesn't talk directly to the database. It uses the driver underneath — just like your raw SQL code does.
 
 ## What ORMs Provide
 
-ORMs add several conveniences on top of raw DB-API:
+### 1. Object Mapping vs. Tuples
 
-### 1. Object Mapping
+Without an ORM you get back tuples and must access columns by index:
 
-```python
-# Raw DB-API - tuples
-import pyodbc
+```{code-cell} python
+import os
+import psycopg2
 
-connection_string = (
-    "DRIVER={ODBC Driver 17 for SQL Server};"
-    "SERVER=localhost,1433;"
-    "DATABASE=Northwind;"
-    "UID=SA;"
-    "PWD=61eF92j4VTtl;"
-    "TrustServerCertificate=yes;"
+conn = psycopg2.connect(
+    host=os.environ["DB_HOST"],
+    port=os.environ["DB_PORT"],
+    dbname=os.environ["DB_NAME"],
+    user=os.environ["DB_USER"],
+    password=os.environ["DB_PASSWORD"],
 )
+cur = conn.cursor()
 
-conn = pyodbc.connect(connection_string)
-cursor = conn.cursor()
-cursor.execute("SELECT CustomerID, CompanyName, ContactName FROM Customers WHERE CustomerID = 'ALFKI'")
-row = cursor.fetchone()
-print(f"(Customer ID: {row[0]}) - (Company Name: {row[1]}) - (Contact Name: {row[2]})")  # Tuple access by index
+# Create a tiny demo table
+cur.execute("DROP TABLE IF EXISTS demo_customers")
+cur.execute("""
+    CREATE TABLE demo_customers (
+        id           SERIAL PRIMARY KEY,
+        company_name TEXT NOT NULL,
+        contact_name TEXT NOT NULL
+    )
+""")
+cur.executemany(
+    "INSERT INTO demo_customers (company_name, contact_name) VALUES (%s, %s)",
+    [("Acme Corp", "Alice"), ("Beta Ltd", "Bob"), ("Gamma GmbH", "Charlie")],
+)
+conn.commit()
+
+cur.execute("SELECT id, company_name, contact_name FROM demo_customers LIMIT 1")
+row = cur.fetchone()
+print(f"(ID: {row[0]}) - (Company: {row[1]}) - (Contact: {row[2]})")  # index access
 conn.close()
 ```
 
-With ORM, you would access data as object attributes instead (we'll see this in detail in Lesson 03):
-
-```python
-# ORM - objects (preview - we'll learn this in Lesson 03)
-# user = session.get(User, 1)
-# print(user.id, user.name, user.email)  # Object attributes
-```
+With an ORM you access rows as object attributes — we'll see this in detail in Lesson 03.
 
 ### 2. SQL Generation
 
-ORMs generate SQL from Python code. Let's see what SQL they create:
+ORMs build SQL from Python expressions. SQLAlchemy lets you inspect the generated SQL:
 
-```python
-# Install SQLAlchemy
-# pip install sqlalchemy
-```
-
-```python
+```{code-cell} python
 from sqlalchemy import create_engine, select, MetaData, Table
+import os
 
-# Connect to Northwind
-engine = create_engine(
-    "mssql+pyodbc://SA:61eF92j4VTtl@localhost:1433/Northwind"
-    "?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes",
-    echo=True  # Shows generated SQL
+db_url = (
+    f"postgresql+psycopg2://{os.environ['DB_USER']}:{os.environ['DB_PASSWORD']}"
+    f"@{os.environ['DB_HOST']}:{os.environ['DB_PORT']}/{os.environ['DB_NAME']}"
 )
 
-# Reflect the Customers table
-metadata = MetaData()
-customers = Table('Customers', metadata, autoload_with=engine)
+engine = create_engine(db_url, echo=True)  # echo=True shows every SQL statement
 
-print(f"Customers table columns: {[c.name for c in customers.columns]}")
+metadata = MetaData()
+customers = Table("demo_customers", metadata, autoload_with=engine)
+print(f"Columns: {[c.name for c in customers.columns]}")
 ```
 
-```python
-# Build a query using SQLAlchemy
-stmt = select(customers).where(customers.c.Country == "Germany").limit(3)
+```{code-cell} python
+# Build a query as a Python expression — no string concatenation needed
+stmt = select(customers).where(customers.c.company_name.like("%Ltd%"))
 
-print("SQLAlchemy query object:")
+print("Generated SQL:")
 print(stmt)
 ```
 
-```python
-# Execute and see the generated SQL
+```{code-cell} python
 with engine.connect() as conn:
     result = conn.execute(stmt)
-    rows = result.fetchall()
-    
-    print(f"\nFound {len(rows)} German customers:")
-    for row in rows:
-        print(f"  {row.CustomerID}: {row.CompanyName} ({row.City})")
+    for row in result:
+        print(f"  {row.id}: {row.company_name}")
 ```
 
-### 3. Seeing Generated SQL
+### 3. Database Portability
 
-Enable SQL logging to understand what the ORM does:
-
-```python
-from sqlalchemy import create_engine
-
-# Enable SQL echo - shows every query
-engine = create_engine("sqlite:///test.db", echo=True)
-
-# Now every query is printed to console
-# This is ESSENTIAL for learning and debugging
-```
-
-### 4. Transaction Management
+The same ORM model works across databases — just change the connection string:
 
 ```python
-# Raw DB-API - manual commit/rollback
-import sqlite3
-
-conn = sqlite3.connect("db.sqlite")
-try:
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO users ...")
-    cursor.execute("INSERT INTO orders ...")
-    conn.commit()
-except Exception as e:
-    conn.rollback()
-    print(f"Error: {e}")
-finally:
-    conn.close()
-```
-
-With ORM (preview - details in Lesson 04):
-
-```python
-# ORM - automatic tracking (we'll learn this in Lesson 04)
-# with Session(engine) as session:
-#     session.add(User(...))
-#     session.add(Order(...))
-#     session.commit()  # Commits both, or rolls back both
-```
-
-### 5. Database Portability
-
-```python
-# Same ORM code works with different databases
-# Just change the connection string:
-
-# SQLite
+# SQLite (development / tests)
 engine = create_engine("sqlite:///dev.db")
 
-# PostgreSQL
-engine = create_engine("postgresql://user:pass@localhost/prod")
-
-# SQL Server
-engine = create_engine("mssql+pyodbc://SA:pass@localhost/prod?driver=...")
+# PostgreSQL (production)
+engine = create_engine("postgresql+psycopg2://user:pass@localhost/prod")
 
 # MySQL
-engine = create_engine("mysql://user:pass@localhost/prod")
+engine = create_engine("mysql+mysqlconnector://user:pass@localhost/prod")
 
 # Models and queries stay the same!
 ```
 
+### 4. Transaction Management
+
+Raw DB-API requires manual `commit` / `rollback`. ORMs handle this via the Session:
+
+```python
+# ORM session — details in Lesson 04
+with Session(engine) as session:
+    session.add(User(name="Alice"))
+    session.add(Order(user_id=1, total=99.99))
+    session.commit()  # commits both, or rolls back both on error
+```
+
 ## When to Use an ORM
 
-ORMs shine in certain scenarios:
+### ✓ Backend Applications and APIs
 
-### ✓ Backend Applications (Web APIs, Microservices)
-
-**Example Use Case:**
 ```python
-# REST API endpoint with ORM (conceptual)
-# @app.post("/users")
-# def create_user(user_data: UserCreate):
-#     user = User(
-#         name=user_data.name,
-#         email=user_data.email
-#     )
-#     session.add(user)
-#     session.commit()
-#     return {"id": user.id, "name": user.name}
+# REST API endpoint — ORM keeps the code clean
+@app.post("/products")
+def create_product(data: ProductCreate):
+    product = Product(name=data.name, price=data.price)
+    session.add(product)
+    session.commit()
+    return {"id": product.id}
 ```
 
 **Why ORM works here:**
-- CRUD operations (Create, Read, Update, Delete)
-- Simple queries
-- Objects map naturally to API resources
-- Developer productivity matters more than query optimization
+- CRUD operations map naturally to Python objects
+- Schema changes stay in code (schema as code)
+- Developer productivity matters more than query micro-optimization
 
-### ✓ Operational Databases (PostgreSQL, MySQL, SQL Server)
+### ✓ Operational Databases
 
-**Characteristics:**
-- Small to medium datasets (thousands to millions of rows)
-- Transactional workloads
-- Relationships between entities
-- Schema managed by application
-
-**Example:**
-```python
-# Application database - CRUD-focused
-# user = session.get(User, user_id)
-# user.last_login = datetime.now()
-# session.commit()
-```
+- Small-to-medium datasets (thousands to millions of rows)
+- Transactional workloads (CRUD)
+- Relationships between entities (users, orders, products)
 
 ### ✓ Testing and Development
 
 ```python
-# In-memory database for tests (we'll learn this in Lesson 05)
-# @pytest.fixture
-# def db_session():
-#     engine = create_engine("sqlite:///:memory:")
-#     Base.metadata.create_all(engine)
-#     with Session(engine) as session:
-#         yield session
+# In-memory SQLite — instant, zero setup (details in Lesson 05)
+@pytest.fixture
+def db_session():
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        yield session
 ```
-
-**Why ORM works here:**
-- Instant test databases
-- No external dependencies
-- Schema as code
-- Reproducible across environments
-
-### ✓ Rapid Prototyping
-
-**Example:**
-```python
-# Quick prototype - schema evolves rapidly
-# class BlogPost(Base):
-#     __tablename__ = "posts"
-#     id: Mapped[int] = mapped_column(primary_key=True)
-#     title: Mapped[str]
-#     content: Mapped[str]
-#
-# Base.metadata.create_all(engine)  # Tables created instantly
-```
-
-**Why ORM works here:**
-- Fast iteration
-- Schema changes are code changes
-- Focus on logic, not SQL
 
 ## When NOT to Use an ORM
 
-This is equally important for data engineers:
-
 ### ✗ Analytical Databases (Snowflake, BigQuery, Redshift)
 
-Let's compare with a real Northwind example:
+Complex analytical queries are far clearer as raw SQL:
 
-```python
-# ❌ ORM doesn't know about these optimizations
-# This is conceptual - ORMs struggle with complex analytics
-```
+```{code-cell} python
+import os
+import psycopg2
+import random
+from datetime import date, timedelta
 
-```python
-# ✓ Use raw SQL with driver for analytics
-import pyodbc
-
-connection_string = (
-    "DRIVER={ODBC Driver 17 for SQL Server};"
-    "SERVER=localhost,1433;"
-    "DATABASE=Northwind;"
-    "UID=SA;"
-    "PWD=61eF92j4VTtl;"
-    "TrustServerCertificate=yes;"
+conn = psycopg2.connect(
+    host=os.environ["DB_HOST"],
+    port=os.environ["DB_PORT"],
+    dbname=os.environ["DB_NAME"],
+    user=os.environ["DB_USER"],
+    password=os.environ["DB_PASSWORD"],
 )
+cur = conn.cursor()
 
-with pyodbc.connect(connection_string) as conn:
-    cursor = conn.cursor()
-    
-    # Complex analytical query with aggregations
-    cursor.execute("""
-        SELECT 
-            YEAR(o.OrderDate) as Year,
-            MONTH(o.OrderDate) as Month,
-            COUNT(DISTINCT o.CustomerID) as UniqueCustomers,
-            COUNT(o.OrderID) as TotalOrders,
-            SUM(od.UnitPrice * od.Quantity) as Revenue,
-            AVG(od.UnitPrice * od.Quantity) as AvgOrderValue
-        FROM Orders o
-        JOIN [Order Details] od ON o.OrderID = od.OrderID
-        WHERE o.OrderDate >= '1997-01-01'
-        GROUP BY YEAR(o.OrderDate), MONTH(o.OrderDate)
-        ORDER BY Year DESC, Month DESC
-    """)
-    
-    print(f"{'Year':<6} {'Month':<6} {'Customers':<12} {'Orders':<10} {'Revenue':<15} {'Avg Order'}")
-    print("-" * 70)
-    
-    for row in cursor.fetchmany(5):
-        print(f"{row.Year:<6} {row.Month:<6} {row.UniqueCustomers:<12} {row.TotalOrders:<10} "
-              f"${row.Revenue:>12,.2f} ${row.AvgOrderValue:>10,.2f}")
-```
-
-**Why NOT ORM:**
-- **Optimization**: You need exact control over query plans
-- **Complexity**: Window functions, CTEs, complex aggregations
-- **Scale**: Billions of rows - can't load into objects
-- **Database features**: Clustering, partitioning, materialized views
-- **Cost**: Analytical databases charge per query/data scanned
-
-### ✗ ETL Pipelines and Bulk Operations
-
-```python
-# ❌ DON'T use ORM for bulk inserts
-# for row in million_rows:
-#     session.add(Product(name=row['name'], price=row['price']))
-# session.commit()  # Extremely slow!
-```
-
-```python
-# ✓ Use bulk operations or raw SQL
-import sqlite3
-
-conn = sqlite3.connect("products.db")
-cursor = conn.cursor()
-
-# Create sample data
-products_data = [
-    (f"Product {i}", 10.0 + i) 
-    for i in range(1000)
-]
-
-# Bulk insert - much faster
-cursor.executemany(
-    "INSERT INTO products (name, price) VALUES (?, ?)",
-    products_data
-)
+# Seed demo data
+cur.execute("DROP TABLE IF EXISTS demo_orders CASCADE")
+cur.execute("""
+    CREATE TABLE demo_orders (
+        id          SERIAL PRIMARY KEY,
+        customer_id INT REFERENCES demo_customers(id),
+        revenue     NUMERIC(10,2),
+        order_date  DATE
+    )
+""")
+for cid in range(1, 4):
+    for _ in range(random.randint(3, 8)):
+        cur.execute(
+            "INSERT INTO demo_orders (customer_id, revenue, order_date) VALUES (%s, %s, %s)",
+            (cid, round(random.uniform(50, 500), 2), date.today() - timedelta(days=random.randint(0, 365))),
+        )
 conn.commit()
+print("Demo data seeded")
+```
 
-print(f"Inserted {len(products_data)} products efficiently")
+```{code-cell} python
+# Complex analytical query — exact control is essential
+cur.execute("""
+    SELECT
+        c.company_name,
+        COUNT(o.id)      AS orders,
+        SUM(o.revenue)   AS total_revenue,
+        AVG(o.revenue)   AS avg_order
+    FROM demo_customers c
+    LEFT JOIN demo_orders o ON c.id = o.customer_id
+    GROUP BY c.company_name
+    ORDER BY total_revenue DESC
+""")
+
+print(f"{'Company':<15} {'Orders':<8} {'Revenue':>12} {'Avg Order':>12}")
+print("-" * 52)
+for company, orders, revenue, avg in cur.fetchall():
+    print(f"{company:<15} {orders:<8} ${float(revenue or 0):>10,.2f} ${float(avg or 0):>10,.2f}")
+
 conn.close()
 ```
 
 **Why NOT ORM:**
-- **Performance**: ORM adds overhead for each object
-- **Memory**: Can't load millions of objects into RAM
-- **Simplicity**: Bulk operations don't need object mapping
+- You need exact query plans for cost optimization
+- Window functions, CTEs, complex aggregations — ORM builders become unreadable
+- Analytical databases charge per bytes scanned; you must control every query
 
-### ✗ Complex Analytical Queries
-
-```python
-# ❌ This is painful with ORM - complex query builders become unreadable
-# ORM query builders struggle with complex CTEs and window functions
-```
+### ✗ ETL Pipelines and Bulk Inserts
 
 ```python
-# ✓ Much clearer with raw SQL
-import pyodbc
+# ❌ DON'T: ORM object-per-row is extremely slow at scale
+for row in million_rows:
+    session.add(Product(name=row["name"], price=row["price"]))
+session.commit()
 
-connection_string = (
-    "DRIVER={ODBC Driver 17 for SQL Server};"
-    "SERVER=localhost,1433;"
-    "DATABASE=Northwind;"
-    "UID=SA;"
-    "PWD=61eF92j4VTtl;"
-    "TrustServerCertificate=yes;"
-)
-
-with pyodbc.connect(connection_string) as conn:
-    cursor = conn.cursor()
-    
-    # Complex query with CTE and window function
-    cursor.execute("""
-        WITH CustomerStats AS (
-            SELECT 
-                c.CustomerID,
-                c.CompanyName,
-                COUNT(o.OrderID) as OrderCount,
-                SUM(od.UnitPrice * od.Quantity) as TotalSpent,
-                RANK() OVER (ORDER BY SUM(od.UnitPrice * od.Quantity) DESC) as SpendingRank
-            FROM Customers c
-            LEFT JOIN Orders o ON c.CustomerID = o.CustomerID
-            LEFT JOIN [Order Details] od ON o.OrderID = od.OrderID
-            GROUP BY c.CustomerID, c.CompanyName
-        )
-        SELECT TOP 5
-            CustomerID,
-            CompanyName,
-            OrderCount,
-            TotalSpent,
-            SpendingRank
-        FROM CustomerStats
-        WHERE OrderCount > 5
-        ORDER BY TotalSpent DESC
-    """)
-    
-    print("Top 5 customers by spending:")
-    for row in cursor.fetchall():
-        print(f"  #{row.SpendingRank} {row.CompanyName}: ${row.TotalSpent:,.2f} ({row.OrderCount} orders)")
+# ✓ DO: bulk insert via driver
+cursor.executemany("INSERT INTO products (name, price) VALUES (%s, %s)", rows)
+conn.commit()
 ```
-
-**Why NOT ORM:**
-- Complex queries are clearer in SQL
-- ORM query builders become unreadable
-- Harder to debug and optimize
 
 ## Real-World Decision Framework
-
-Ask yourself these questions:
 
 | Question | ORM ✓ | Raw SQL ✓ |
 |----------|-------|-----------|
 | Is this a CRUD application? | Yes | No |
 | Are queries simple? | Yes | No |
-| Is data volume small (<1M rows)? | Yes | No |
-| Do I need relationships? | Yes | Maybe |
-| Is developer productivity critical? | Yes | Maybe |
+| Is data volume small (<1M rows per query)? | Yes | No |
+| Is developer productivity the priority? | Yes | Maybe |
 | Is query cost a concern? | No | Yes |
-| Are queries complex (window functions, CTEs)? | No | Yes |
+| Complex aggregations, window functions, CTEs? | No | Yes |
 | Is this an analytical database? | No | Yes |
-| Do I need bulk operations (>10K rows)? | No | Yes |
-| Am I doing ETL? | No | Yes |
+| Bulk inserts or ETL (>10K rows at a time)? | No | Yes |
 
-## Comparing Raw SQL vs ORM
+## Direct Comparison: Raw SQL vs ORM
 
-Let's see a direct comparison with Northwind data:
+```{code-cell} python
+import os
+import psycopg2
 
-### Raw SQL Approach
-
-```python
-import pyodbc
-
-connection_string = (
-    "DRIVER={ODBC Driver 17 for SQL Server};"
-    "SERVER=localhost,1433;"
-    "DATABASE=Northwind;"
-    "UID=SA;"
-    "PWD=61eF92j4VTtl;"
-    "TrustServerCertificate=yes;"
+conn = psycopg2.connect(
+    host=os.environ["DB_HOST"],
+    port=os.environ["DB_PORT"],
+    dbname=os.environ["DB_NAME"],
+    user=os.environ["DB_USER"],
+    password=os.environ["DB_PASSWORD"],
 )
+cur = conn.cursor()
 
-with pyodbc.connect(connection_string) as conn:
-    cursor = conn.cursor()
-    
-    # Get products with category
-    cursor.execute("""
-        SELECT TOP 5
-            p.ProductName,
-            p.UnitPrice,
-            c.CategoryName
-        FROM Products p
-        JOIN Categories c ON p.CategoryID = c.CategoryID
-        WHERE p.UnitPrice > 20
-        ORDER BY p.UnitPrice DESC
-    """)
-    
-    print("Expensive products (Raw SQL):")
-    for row in cursor.fetchall():
-        print(f"  {row.ProductName}: ${row.UnitPrice:.2f} ({row.CategoryName})")
+cur.execute("""
+    SELECT c.company_name, COUNT(o.id) AS order_count
+    FROM demo_customers c
+    LEFT JOIN demo_orders o ON c.id = o.customer_id
+    GROUP BY c.company_name
+    ORDER BY order_count DESC
+""")
+print("Top customers (raw SQL):")
+for row in cur.fetchall():
+    print(f"  {row[0]}: {row[1]} orders")
+
+conn.close()
 ```
 
-### ORM Approach (Preview)
+```{code-cell} python
+from sqlalchemy import create_engine, select, func, MetaData, Table
+import os
 
-With SQLAlchemy (we'll learn details in Lesson 03-04):
-
-```python
-from sqlalchemy import create_engine, select, MetaData, Table
-
-engine = create_engine(
-    "mssql+pyodbc://SA:61eF92j4VTtl@localhost:1433/Northwind"
-    "?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes",
-    echo=True
+db_url = (
+    f"postgresql+psycopg2://{os.environ['DB_USER']}:{os.environ['DB_PASSWORD']}"
+    f"@{os.environ['DB_HOST']}:{os.environ['DB_PORT']}/{os.environ['DB_NAME']}"
 )
+engine = create_engine(db_url, echo=True)
 
-metadata = MetaData()
-products = Table('Products', metadata, autoload_with=engine)
-categories = Table('Categories', metadata, autoload_with=engine)
+metadata  = MetaData()
+customers = Table("demo_customers", metadata, autoload_with=engine)
+orders    = Table("demo_orders",    metadata, autoload_with=engine)
 
-# Build query
 stmt = (
-    select(products.c.ProductName, products.c.UnitPrice, categories.c.CategoryName)
-    .join(categories, products.c.CategoryID == categories.c.CategoryID)
-    .where(products.c.UnitPrice > 20)
-    .order_by(products.c.UnitPrice.desc())
-    .limit(5)
+    select(customers.c.company_name, func.count(orders.c.id).label("order_count"))
+    .join(orders, customers.c.id == orders.c.customer_id, isouter=True)
+    .group_by(customers.c.company_name)
+    .order_by(func.count(orders.c.id).desc())
 )
 
 with engine.connect() as conn:
-    result = conn.execute(stmt)
-    
-    print("\nExpensive products (ORM):")
-    for row in result:
-        print(f"  {row.ProductName}: ${row.UnitPrice:.2f} ({row.CategoryName})")
-
-# Both produce the same results!
-# ORM version shows the generated SQL with echo=True
+    print("\nTop customers (SQLAlchemy Core):")
+    for row in conn.execute(stmt):
+        print(f"  {row.company_name}: {row.order_count} orders")
 ```
 
-**Observation:** For this simple query, both approaches work. Raw SQL is more concise and direct. ORM provides type safety and can help catch errors at development time.
+Both produce the same result. For this simple query either approach is fine. As complexity grows, raw SQL scales more gracefully.
+
+## Cleanup
+
+```{code-cell} python
+import os
+import psycopg2
+
+conn = psycopg2.connect(
+    host=os.environ["DB_HOST"],
+    port=os.environ["DB_PORT"],
+    dbname=os.environ["DB_NAME"],
+    user=os.environ["DB_USER"],
+    password=os.environ["DB_PASSWORD"],
+)
+cur = conn.cursor()
+cur.execute("DROP TABLE IF EXISTS demo_orders CASCADE")
+cur.execute("DROP TABLE IF EXISTS demo_customers CASCADE")
+conn.commit()
+conn.close()
+print("Demo tables cleaned up")
+```
 
 ## Key Takeaways
 
-- **ORMs are wrappers** - They generate SQL, they don't replace it
-- **Use ORMs for backend apps** - CRUD operations, operational databases
-- **Use raw SQL for analytics** - Data warehouses, complex queries, bulk operations
-- **Always see the SQL** - Enable logging (`echo=True`), understand what's generated
-- **Know both approaches** - The best engineers use the right tool for the job
-- **In data engineering** - You'll mostly use raw SQL with drivers for analytical workloads
-- **For application development** - ORMs can boost productivity
+- **ORMs are wrappers** — they generate SQL, they don't replace it
+- **Use ORMs for backend apps** — CRUD operations, operational databases
+- **Use raw SQL for analytics** — data warehouses, complex queries, bulk operations
+- **Always see the SQL** — enable `echo=True`, understand what's generated
+- **Know both approaches** — the best engineers use the right tool for the job
 
 ## What's Next?
 

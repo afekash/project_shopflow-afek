@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Interfaces in Python
 
 An **interface** is a contract that defines what methods a class must implement, without specifying how. Interfaces enable decoupling, testability, and swappable implementations. Python offers two approaches: Abstract Base Classes (ABCs) and Protocols.
@@ -6,7 +13,7 @@ An **interface** is a contract that defines what methods a class must implement,
 
 In languages like Java or C#, you define an interface explicitly:
 
-```python
+```{code-cell} python
 # Java/C# style (pseudocode)
 # interface DataSource {
 #     List<Record> fetch();
@@ -33,7 +40,7 @@ Python doesn't have an `interface` keyword, but provides two mechanisms: **Abstr
 
 ABCs define interfaces explicitly with `abc.ABC` and `@abstractmethod`:
 
-```python
+```{code-cell} python
 from abc import ABC, abstractmethod
 from typing import List
 
@@ -95,7 +102,7 @@ api_source = ApiDataSource("https://api.example.com/data")
 
 ### What Happens If You Forget to Implement?
 
-```python
+```{code-cell} python
 from abc import ABC, abstractmethod
 
 class DataSource(ABC):
@@ -122,7 +129,7 @@ except TypeError as e:
 
 You can also require properties:
 
-```python
+```{code-cell} python
 from abc import ABC, abstractmethod
 
 class Configurable(ABC):
@@ -154,7 +161,7 @@ print(f"Config name: {config.config_name}")
 
 Protocols define interfaces **implicitly** using Python's duck typing: "if it walks like a duck and quacks like a duck, it's a duck."
 
-```python
+```{code-cell} python
 from typing import Protocol, List
 
 class DataSource(Protocol):
@@ -210,7 +217,7 @@ api_source = ApiDataSource("https://api.example.com")
 
 **Key difference from ABC**: No runtime check! If you pass an object without `fetch()` or `close()`, it fails when you **call** the method, not when you create the object.
 
-```python
+```{code-cell} python
 from typing import Protocol
 
 class DataSource(Protocol):
@@ -233,7 +240,7 @@ except AttributeError as e:
 
 **Type checkers catch this at development time:**
 
-```python
+```{code-cell} python
 # mypy will flag this as an error:
 # def process_data(source: DataSource):
 #     ...
@@ -254,7 +261,7 @@ except AttributeError as e:
 
 Use ABCs when you **own the implementations** and want runtime enforcement:
 
-```python
+```{code-cell} python
 from abc import ABC, abstractmethod
 
 class DatabaseConnection(ABC):
@@ -299,7 +306,7 @@ conn.close()
 
 Use Protocols when working with **third-party code** or when you want **loose coupling**:
 
-```python
+```{code-cell} python
 from typing import Protocol
 
 class Renderable(Protocol):
@@ -347,7 +354,7 @@ Let's build a notification system that demonstrates both approaches.
 
 ### Version 1: Using ABC
 
-```python
+```{code-cell} python
 from abc import ABC, abstractmethod
 
 class Notifier(ABC):
@@ -398,7 +405,7 @@ service.notify_all("System deployment complete!")
 
 ### Version 2: Using Protocol
 
-```python
+```{code-cell} python
 from typing import Protocol
 
 class Notifier(Protocol):
@@ -457,7 +464,7 @@ service.notify_all("System deployment complete!")
 
 Protocols are checked by type checkers (mypy), not at runtime. But you can opt-in to runtime checking:
 
-```python
+```{code-cell} python
 from typing import Protocol, runtime_checkable
 
 @runtime_checkable
@@ -500,7 +507,7 @@ print(f"Square is Drawable: {isinstance(square, Drawable)}")  # False
 
 **In practice:**
 
-```python
+```{code-cell} python
 # Good: Protocol for type hints (flexible)
 from typing import Protocol
 

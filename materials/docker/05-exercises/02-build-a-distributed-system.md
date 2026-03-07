@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Exercise: Build a Distributed System
 
 ## Overview
@@ -98,7 +105,7 @@ The Gateway should:
 <summary>Solution (click to reveal)</summary>
 
 **gateway/main.py:**
-```python
+```{code-cell} python
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import psycopg2
@@ -243,7 +250,7 @@ The Worker should:
 <summary>Solution (click to reveal)</summary>
 
 **worker/main.py:**
-```python
+```{code-cell} python
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import time

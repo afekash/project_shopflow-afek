@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Git in the Real World
 
 ## Overview
@@ -556,7 +563,7 @@ feature/* → no restrictions
 
 ### Trunk-Based with Feature Flags
 
-```python
+```{code-cell} python
 # Code is always merged to main
 # Incomplete features hidden behind flags
 

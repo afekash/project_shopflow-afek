@@ -1,29 +1,87 @@
 ---
-description: Format and reproducibility standards for course materials in python
-globs: materials/python/**/*.md
+description: MyST Markdown format and executable code cell conventions
+globs: materials/**/*.md
 alwaysApply: false
 ---
 
-# Content Format Standards
+# Content Format
 
-## File Format (Jupytext)
+## File Format
 
-- Source files are Markdown (`.md`) - these are version controlled
-- Jupytext converts `.md` → `.ipynb` notebooks (gitignored)
-- Students run `uv run python generate_notebooks.py` to generate notebooks
-- Use fenced code blocks with language tags (```python, ```sql, ```bash) - each becomes a notebook cell
-- Structure: concept explanation → code example → exercise
+- Source files are MyST Markdown (`.md`) — the only source of truth
+- Executable code runs in-page via the local Jupyter server (configured in `myst.yml` under `project.jupyter`)
 
-## Code Block Rules
+## Kernelspec Frontmatter (Required)
 
-- Every ```python block becomes an executable cell
-- Mark expected outputs with `# Result:` comments
-- Code must be runnable in sequence from top to bottom
-- Use SQLite and standard library when possible (zero-install)
+Every `.md` file that contains at least one `{code-cell}` **must** declare a kernelspec in its YAML frontmatter so MyST/Thebe can attach the correct kernel:
+
+```yaml
+---
+kernelspec:
+  name: python3
+  display_name: Python 3
+  language: python
+---
+```
+
+Place this at the very top of the file (before any headings). Files without code cells do not need it.
+
+## Executable Code Cells
+
+All executable cells use `{code-cell} python` — the global kernel is `python3`. Cell magics select the language:
+
+| Magic | Use for |
+|-------|---------|
+| *(none)* | Pure Python |
+| `%%bash` | Shell commands (docker, curl, pip, git, etc.) |
+| `%%sql` | Raw SQL (requires jupysql setup cell and `DATABASE_URL`) |
+
+Examples:
+
+````
+```{code-cell} python
+%%bash
+docker ps
+```
+````
+
+````
+```{code-cell} python
+%%sql
+SELECT * FROM orders LIMIT 5;
+```
+````
+
+### Setup cells
+
+Lessons using `%%sql` need a hidden setup cell at the top:
+
+````
+```{code-cell} python
+:tags: [remove-input]
+%load_ext sql
+```
+````
+
+Connection is automatic via `DATABASE_URL` (set in the lab's `compose.yml`).
+
+### Non-executable blocks
+
+Plain fenced blocks (` ```python `, ` ```bash `, ` ```sql `, ` ```yaml `) are illustrative only — not executed in-page.
+
+## Lab Notes
+
+At the top of lessons requiring a lab:
+
+````
+```{note}
+This lesson requires the ORM lab. Run `make lab-orm` before starting.
+```
+````
 
 ## Reproducibility
 
-- All examples must run on Windows, macOS, Linux
-- Prefer SQLite over external databases
+- All examples must run on the workspace container (Linux-based)
+- Prefer SQLite and stdlib for lessons that don't need a sidecar
+- Code cells must be runnable in sequence from top to bottom
 - Embed sample data in code or provide seed scripts
-- Use Docker only when topic requires it (PostgreSQL features, distributed systems)

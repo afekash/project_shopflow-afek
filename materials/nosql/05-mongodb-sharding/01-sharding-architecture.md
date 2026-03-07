@@ -1,3 +1,10 @@
+---
+kernelspec:
+  name: python3
+  language: python
+  display_name: Python 3
+---
+
 # Sharding Architecture
 
 ## Why Sharding?
@@ -172,7 +179,7 @@ graph LR
     Mongos --> App
 ```
 
-```python
+```{code-cell} python
 plan = db.events.find({"user_id": "user_42"}).explain()
 print(plan["queryPlanner"]["winningPlan"]["stage"])  # "SINGLE_SHARD"
 ```
@@ -191,7 +198,7 @@ graph LR
     Mongos -->|"Merge, sort, return"| App
 ```
 
-```python
+```{code-cell} python
 plan = db.events.find({"status": "active"}).explain()
 print(plan["queryPlanner"]["winningPlan"]["stage"])  # "SHARD_MERGE"
 # Touches every shard, merges results in mongos
@@ -222,7 +229,7 @@ graph TD
 - Can be manually paused for maintenance windows
 - Each migration is transparent to the application -- during migration, writes go to the source shard and are forwarded to the destination
 
-```python
+```{code-cell} python
 # Check if balancer is enabled
 balancer_cfg = client["config"].settings.find_one({"_id": "balancer"}) or {}
 print("Balancer enabled:", not balancer_cfg.get("stopped", False))
@@ -243,7 +250,7 @@ Zones allow you to pin specific ranges of the shard key to specific shards. Used
 - **Tiered storage**: Hot data on SSD shards, cold data on HDD shards
 - **Tenant isolation**: Each enterprise customer has a dedicated shard
 
-```python
+```{code-cell} python
 from bson import MinKey, MaxKey
 
 # Tag shards with zone names
