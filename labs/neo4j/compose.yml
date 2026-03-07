@@ -18,6 +18,7 @@ services:
         condition: service_healthy
 
   neo4j:
+    container_name: neo4j
     image: neo4j:5-community
     ports:
       - "7474:7474"

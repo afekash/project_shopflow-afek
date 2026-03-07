@@ -107,11 +107,11 @@ graph TD
         API --> RecommendSvc["Recommendation Service"]
         API --> SearchSvc["Search Service"]
         
-        OrderSvc --> PG["PostgreSQL\nOrders & Payments\nACID transactions"]
-        ProductSvc --> Mongo["MongoDB\nProduct Catalog\nFlexible schema"]
-        UserSvc --> Redis["Redis\nSessions & Cache\nSub-ms latency"]
-        RecommendSvc --> Neo["Neo4j\nProduct Graph\nUser behavior"]
-        SearchSvc --> ES["Elasticsearch\nFull-text search\nFaceting"]
+        OrderSvc --> PG["PostgreSQL<br/>Orders & Payments<br/>ACID transactions"]
+        ProductSvc --> Mongo["MongoDB<br/>Product Catalog<br/>Flexible schema"]
+        UserSvc --> Redis["Redis<br/>Sessions & Cache<br/>Sub-ms latency"]
+        RecommendSvc --> Neo["Neo4j<br/>Product Graph<br/>User behavior"]
+        SearchSvc --> ES["Elasticsearch<br/>Full-text search<br/>Faceting"]
     end
 ```
 

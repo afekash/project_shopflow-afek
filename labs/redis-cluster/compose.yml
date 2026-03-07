@@ -29,6 +29,7 @@ services:
         condition: service_healthy
 
   redis-node-1:
+    container_name: redis-node-1
     image: redis:7-alpine
     command: >
       redis-server
@@ -45,6 +46,7 @@ services:
     restart: unless-stopped
 
   redis-node-2:
+    container_name: redis-node-2
     image: redis:7-alpine
     command: >
       redis-server
@@ -61,6 +63,7 @@ services:
     restart: unless-stopped
 
   redis-node-3:
+    container_name: redis-node-3
     image: redis:7-alpine
     command: >
       redis-server
@@ -77,6 +80,7 @@ services:
     restart: unless-stopped
 
   redis-node-4:
+    container_name: redis-node-4
     image: redis:7-alpine
     command: >
       redis-server
@@ -93,6 +97,7 @@ services:
     restart: unless-stopped
 
   redis-node-5:
+    container_name: redis-node-5
     image: redis:7-alpine
     command: >
       redis-server
@@ -109,6 +114,7 @@ services:
     restart: unless-stopped
 
   redis-node-6:
+    container_name: redis-node-6
     image: redis:7-alpine
     command: >
       redis-server

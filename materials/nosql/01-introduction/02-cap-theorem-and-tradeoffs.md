@@ -40,7 +40,7 @@ CAP makes it sound binary, but consistency is actually a spectrum. From stronges
 ```mermaid
 graph TD
     subgraph cp [CP - Consistent + Partition Tolerant]
-        MongoDB["MongoDB\n(default config)"]
+        MongoDB["MongoDB<br/>(default config)"]
         HBase
         Zookeeper
     end
@@ -48,15 +48,15 @@ graph TD
     subgraph ap [AP - Available + Partition Tolerant]
         Cassandra
         CouchDB
-        DynamoDB["DynamoDB\n(eventual reads)"]
+        DynamoDB["DynamoDB<br/>(eventual reads)"]
     end
     
     subgraph ca [CA - Consistent + Available]
-        MySQL["MySQL\n(single node)"]
-        Postgres["PostgreSQL\n(single node)"]
+        MySQL["MySQL<br/>(single node)"]
+        Postgres["PostgreSQL<br/>(single node)"]
     end
     
-    note["Note: CA only works without partitions\ni.e., single-node or same-datacenter"]
+    note["Note: CA only works without partitions<br/>i.e., single-node or same-datacenter"]
 ```
 
 

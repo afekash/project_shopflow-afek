@@ -62,8 +62,8 @@ If a replica disconnects briefly and reconnects, it requests only the commands i
 ```{code-cell} python
 import redis
 
-# Connect to the primary
-primary = redis.Redis(host="redis-primary", port=6379, decode_responses=True)
+# Connect to the initial primary (redis-1 at lab startup)
+primary = redis.Redis(host="redis-1", port=6379, decode_responses=True)
 
 # Check replication status from the primary's perspective
 info = primary.info("replication")
@@ -118,25 +118,6 @@ print(f"Replication offset: {replica_info.get('slave_repl_offset', 'n/a')}")
 
 Async replication means replicas can serve stale reads. How stale? Usually a few milliseconds in a healthy cluster. But during high write load or network issues, lag can grow to seconds.
 
-```{code-cell} python
-# Demonstrate replication lag
-primary_client.set("lag:test", "version_1")
-
-# Read immediately from replica -- might still see old value
-val_immediate = replica_client.get("lag:test")
-
-# Read after short wait
-time.sleep(0.1)
-val_after_wait = replica_client.get("lag:test")
-
-print(f"Immediate read from replica: {val_immediate!r}")
-print(f"Read after 100ms:            {val_after_wait!r}")
-
-# Check how far behind the replica is (in bytes of replication backlog)
-master_info = primary_client.info("replication")
-print(f"\nMaster replication offset: {master_info.get('master_repl_offset', 'n/a')}")
-```
-
 For workloads that cannot tolerate stale reads -- like reading a write you just made -- you must read from the primary. Replicas are for workloads where "probably current" is good enough: most caches, leaderboards, feature flags.
 
 ---
@@ -155,9 +136,9 @@ flowchart TD
         S3[Sentinel 3]
     end
     subgraph Redis
-        P[Primary\nredis-primary:6379]
-        R1[Replica 1\nredis-replica-1:6379]
-        R2[Replica 2\nredis-replica-2:6379]
+        P[redis-1<br/>initial primary]
+        R1[redis-2<br/>initial replica]
+        R2[redis-3<br/>initial replica]
     end
     S1 & S2 & S3 -->|monitor| P
     S1 & S2 & S3 -->|monitor| R1
@@ -177,7 +158,18 @@ One sentinel is elected leader and initiates the failover:
 4. Update clients via the Sentinel API
 
 ```{code-cell} python
-# Observe the current topology via Sentinel
+import time
+import socket
+
+def resolve(addr):
+    """Resolve an (ip, port) tuple to (hostname, port) via Docker's embedded DNS."""
+    ip, port = addr
+    try:
+        hostname = socket.gethostbyaddr(ip)[0].split(".")[0]
+    except socket.herror:
+        hostname = ip
+    return (hostname, port)
+
 sentinel_conn = Sentinel(
     [("redis-sentinel-1", 26379),
      ("redis-sentinel-2", 26379),
@@ -185,18 +177,70 @@ sentinel_conn = Sentinel(
     socket_timeout=1.0
 )
 
-# Sentinel knows who the current primary is
-master_addr = sentinel_conn.discover_master("mymaster")
-replicas = sentinel_conn.discover_slaves("mymaster")
+# --- Before failover ---
+primary_before = sentinel_conn.discover_master("mymaster")
+replicas_before = [resolve(r) for r in sentinel_conn.discover_slaves("mymaster")]
+print("=== Before failover ===")
+print(f"Primary:  {primary_before}")
+print(f"Replicas: {replicas_before}")
 
-print(f"Current primary: {master_addr}")
-print(f"Known replicas:  {replicas}")
+# Write a key so we can check it survived the failover
+primary_client = sentinel_conn.master_for("mymaster", decode_responses=True)
+primary_client.set("failover:canary", "written-before-failover")
+print(f"\nCanary key written to {primary_before}")
+```
 
-# The Sentinel client transparently reconnects after failover
-# Your application doesn't need to know which IP is the primary
-primary = sentinel_conn.master_for("mymaster", decode_responses=True)
-primary.set("failover:test", "still working after failover")
-print(f"\nWrite succeeded: {primary.get('failover:test')!r}")
+```{code-cell} python
+%%bash
+# Kill the current primary — Sentinel must detect and promote a replica
+docker stop redis-1
+echo "redis-1 stopped"
+```
+
+```{code-cell} python
+# Poll Sentinel until it elects a new primary (typically 10–30 s)
+print("Waiting for Sentinel to elect a new primary...")
+deadline = time.time() + 60
+new_primary = None
+while time.time() < deadline:
+    try:
+        candidate = sentinel_conn.discover_master("mymaster")
+        # Accept once Sentinel reports an address different from the old primary
+        if candidate != primary_before:
+            new_primary = candidate
+            break
+    except Exception:
+        pass
+    time.sleep(1)
+
+if new_primary is None:
+    print("Timed out — Sentinel did not elect a new primary within 60 s")
+else:
+    print(f"\n=== After failover ===")
+    print(f"Old primary: {primary_before}")
+    print(f"New primary: {resolve(new_primary)}")
+    print(f"Remaining replicas: {[resolve(r) for r in sentinel_conn.discover_slaves('mymaster')]}")
+
+    # The sentinel_conn.master_for() client transparently reconnects to the new primary
+    new_primary_client = sentinel_conn.master_for("mymaster", decode_responses=True)
+    canary = new_primary_client.get("failover:canary")
+    print(f"\nCanary key on new primary: {canary!r}")
+    new_primary_client.set("failover:post", "written-after-failover")
+    print(f"New write succeeded: {new_primary_client.get('failover:post')!r}")
+```
+
+```{code-cell} python
+%%bash
+# Bring redis-1 back — it rejoins as a replica of whoever is now primary
+docker start redis-1
+echo "redis-1 restarted"
+```
+
+```{code-cell} python
+time.sleep(3)  # give it a moment to connect
+print("=== After restart ===")
+print(f"Primary:  {resolve(sentinel_conn.discover_master('mymaster'))}")
+print(f"Replicas: {[resolve(r) for r in sentinel_conn.discover_slaves('mymaster')]}")
 ```
 
 ### What Sentinel Does Not Solve

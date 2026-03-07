@@ -1,6 +1,9 @@
-# Redis Sentinel lab: 1 primary + 2 replicas + 3 sentinels.
+# Redis Sentinel lab: 3 Redis nodes (redis-1 starts as primary) + 3 sentinels.
 # Backs materials/nosql/07-key-value-deep-dive/04-replication.md
 # Merges with labs/base/compose.yml -- do not duplicate the workspace service here.
+#
+# Nodes are named redis-1/2/3 rather than redis-primary/replica because roles
+# are not fixed -- any node can become primary after a failover.
 #
 # Usage: make lab-redis-sentinel
 
@@ -10,18 +13,19 @@ services:
       args:
         LAB: redis-sentinel
     environment:
-      - REDIS_PRIMARY_HOST=redis-primary
-      - REDIS_PRIMARY_PORT=6379
+      - REDIS_HOST=redis-1
+      - REDIS_PORT=6379
       - REDIS_SENTINEL_HOST=redis-sentinel-1
       - REDIS_SENTINEL_PORT=26379
     depends_on:
-      redis-primary:
+      redis-1:
         condition: service_healthy
       redis-sentinel-1:
         condition: service_healthy
 
-  redis-primary:
+  redis-1:
     image: redis:7-alpine
+    container_name: redis-1
     command: redis-server --appendonly yes
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -30,11 +34,12 @@ services:
       retries: 5
     restart: unless-stopped
 
-  redis-replica-1:
+  redis-2:
     image: redis:7-alpine
-    command: redis-server --replicaof redis-primary 6379 --appendonly yes
+    container_name: redis-2
+    command: redis-server --replicaof redis-1 6379 --appendonly yes
     depends_on:
-      redis-primary:
+      redis-1:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -43,11 +48,12 @@ services:
       retries: 5
     restart: unless-stopped
 
-  redis-replica-2:
+  redis-3:
     image: redis:7-alpine
-    command: redis-server --replicaof redis-primary 6379 --appendonly yes
+    container_name: redis-3
+    command: redis-server --replicaof redis-1 6379 --appendonly yes
     depends_on:
-      redis-primary:
+      redis-1:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -57,15 +63,12 @@ services:
     restart: unless-stopped
 
   redis-sentinel-1:
-    image: redis:7-alpine
-    command: >
-      sh -c "echo 'sentinel monitor mymaster redis-primary 6379 2' > /tmp/sentinel.conf &&
-             echo 'sentinel down-after-milliseconds mymaster 5000' >> /tmp/sentinel.conf &&
-             echo 'sentinel failover-timeout mymaster 15000' >> /tmp/sentinel.conf &&
-             echo 'sentinel parallel-syncs mymaster 1' >> /tmp/sentinel.conf &&
-             redis-sentinel /tmp/sentinel.conf"
+    build:
+      context: ../redis-sentinel
+      dockerfile: Dockerfile.sentinel
+    container_name: redis-sentinel-1
     depends_on:
-      redis-primary:
+      redis-1:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "redis-cli", "-p", "26379", "ping"]
@@ -75,27 +78,21 @@ services:
     restart: unless-stopped
 
   redis-sentinel-2:
-    image: redis:7-alpine
-    command: >
-      sh -c "echo 'sentinel monitor mymaster redis-primary 6379 2' > /tmp/sentinel.conf &&
-             echo 'sentinel down-after-milliseconds mymaster 5000' >> /tmp/sentinel.conf &&
-             echo 'sentinel failover-timeout mymaster 15000' >> /tmp/sentinel.conf &&
-             echo 'sentinel parallel-syncs mymaster 1' >> /tmp/sentinel.conf &&
-             redis-sentinel /tmp/sentinel.conf"
+    build:
+      context: ../redis-sentinel
+      dockerfile: Dockerfile.sentinel
+    container_name: redis-sentinel-2
     depends_on:
-      redis-primary:
+      redis-1:
         condition: service_healthy
     restart: unless-stopped
 
   redis-sentinel-3:
-    image: redis:7-alpine
-    command: >
-      sh -c "echo 'sentinel monitor mymaster redis-primary 6379 2' > /tmp/sentinel.conf &&
-             echo 'sentinel down-after-milliseconds mymaster 5000' >> /tmp/sentinel.conf &&
-             echo 'sentinel failover-timeout mymaster 15000' >> /tmp/sentinel.conf &&
-             echo 'sentinel parallel-syncs mymaster 1' >> /tmp/sentinel.conf &&
-             redis-sentinel /tmp/sentinel.conf"
+    build:
+      context: ../redis-sentinel
+      dockerfile: Dockerfile.sentinel
+    container_name: redis-sentinel-3
     depends_on:
-      redis-primary:
+      redis-1:
         condition: service_healthy
     restart: unless-stopped

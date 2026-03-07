@@ -23,6 +23,7 @@ services:
         condition: service_healthy
 
   neo4j-core1:
+    container_name: neo4j-core1
     image: neo4j:5-enterprise
     environment:
       - NEO4J_AUTH=neo4j/password
@@ -42,6 +43,7 @@ services:
     restart: unless-stopped
 
   neo4j-core2:
+    container_name: neo4j-core2
     image: neo4j:5-enterprise
     environment:
       - NEO4J_AUTH=neo4j/password
@@ -61,6 +63,7 @@ services:
     restart: unless-stopped
 
   neo4j-core3:
+    container_name: neo4j-core3
     image: neo4j:5-enterprise
     environment:
       - NEO4J_AUTH=neo4j/password

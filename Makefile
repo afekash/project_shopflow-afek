@@ -34,7 +34,7 @@ help:
 	@echo "  make lab-distributed      Start workspace + gateway + worker + Redis"
 	@echo "  make lab-web              Start workspace with FastAPI deps (Web APIs lesson)"
 	@echo "  make lab-redis            Start workspace + single Redis (KV lessons 01-03)"
-	@echo "  make lab-redis-sentinel   Start workspace + Redis primary/replicas + Sentinel (KV lesson 04)"
+	@echo "  make lab-redis-sentinel   Start workspace + 3 Redis nodes + Sentinel (KV lesson 04)"
 	@echo "  make lab-redis-cluster    Start workspace + 6-node Redis Cluster (KV lesson 05)"
 	@echo "  make lab-neo4j            Start workspace + single Neo4j (Graph lessons 01-06)"
 	@echo "  make lab-neo4j-cluster    Start workspace + 3-node Neo4j causal cluster (Graph lesson 07)"
@@ -55,78 +55,78 @@ help:
 # ─── Docs / workspace only ──────────────────────────────────────────────────
 
 docs:
-	docker compose $(BASE) up -d --build
+	docker compose $(BASE) up -d --build --remove-orphans
 	@echo "MyST docs: http://localhost:3000"
 	@echo "Jupyter:   http://localhost:8888"
 
 # ─── Lab environments ───────────────────────────────────────────────────────
 
 lab-orm:
-	docker compose $(BASE) -f labs/orm/compose.yml up -d --build
+	docker compose $(BASE) -f labs/orm/compose.yml up -d --build --remove-orphans
 	@echo "PostgreSQL available at localhost:5432"
 	@echo "MyST docs: http://localhost:3000"
 
 lab-sql:
-	docker compose $(BASE) -f labs/sql/compose.yml up -d --build
+	docker compose $(BASE) -f labs/sql/compose.yml up -d --build --remove-orphans
 	@echo "MSSQL available at localhost:1433 (SA / see .env or default password)"
 	@echo "Run 'make sql-restore' to restore AdventureWorks and Northwind databases."
 	@echo "MyST docs: http://localhost:3000"
 
 lab-nosql:
-	docker compose $(BASE) -f labs/nosql/compose.yml up -d --build
+	docker compose $(BASE) -f labs/nosql/compose.yml up -d --build --remove-orphans
 	@echo "MongoDB available at localhost:27017"
 	@echo "MyST docs: http://localhost:3000"
 
 lab-replica-set:
-	docker compose $(BASE) -f labs/replica-set/compose.yml up -d --build
+	docker compose $(BASE) -f labs/replica-set/compose.yml up -d --build --remove-orphans
 	@echo "Waiting for Mongo nodes to start..."
 	sleep 5
 	$(MAKE) replica-set-init
 	@echo "MyST docs: http://localhost:3000"
 
 lab-sharded:
-	docker compose $(BASE) -f labs/sharded/compose.yml up -d --build
+	docker compose $(BASE) -f labs/sharded/compose.yml up -d --build --remove-orphans
 	@echo "Waiting for cluster nodes to start..."
 	sleep 10
 	$(MAKE) sharded-init
 	@echo "MyST docs: http://localhost:3000"
 
 lab-distributed:
-	docker compose $(BASE) -f labs/distributed/compose.yml up -d --build
+	docker compose $(BASE) -f labs/distributed/compose.yml up -d --build --remove-orphans
 	@echo "Gateway API: http://localhost:8000"
 	@echo "Redis:       localhost:6379"
 	@echo "MyST docs:   http://localhost:3000"
 
 lab-web:
-	docker compose $(BASE) -f labs/web/compose.yml up -d --build
+	docker compose $(BASE) -f labs/web/compose.yml up -d --build --remove-orphans
 	@echo "MyST docs: http://localhost:3000"
 
 lab-redis:
-	docker compose $(BASE) -f labs/redis/compose.yml up -d --build
+	docker compose $(BASE) -f labs/redis/compose.yml up -d --build --remove-orphans
 	@echo "Redis available at localhost:6379"
 	@echo "MyST docs: http://localhost:3000"
 
 lab-redis-sentinel:
-	docker compose $(BASE) -f labs/redis-sentinel/compose.yml up -d --build
-	@echo "Redis primary:   redis-primary:6379"
+	docker compose $(BASE) -f labs/redis-sentinel/compose.yml up -d --build --remove-orphans
+	@echo "Redis nodes:     redis-1:6379, redis-2:6379, redis-3:6379"
 	@echo "Redis sentinels: redis-sentinel-1:26379 (quorum of 3)"
 	@echo "MyST docs:       http://localhost:3000"
 
 lab-redis-cluster:
-	docker compose $(BASE) -f labs/redis-cluster/compose.yml up -d --build
+	docker compose $(BASE) -f labs/redis-cluster/compose.yml up -d --build --remove-orphans
 	@echo "Waiting for cluster nodes to start..."
 	sleep 8
 	$(MAKE) redis-cluster-init
 	@echo "MyST docs: http://localhost:3000"
 
 lab-neo4j:
-	docker compose $(BASE) -f labs/neo4j/compose.yml up -d --build
+	docker compose $(BASE) -f labs/neo4j/compose.yml up -d --build --remove-orphans
 	@echo "Neo4j browser: http://localhost:7474  (neo4j / password)"
 	@echo "Bolt:          localhost:7687"
 	@echo "MyST docs:     http://localhost:3000"
 
 lab-neo4j-cluster:
-	docker compose $(BASE) -f labs/neo4j-cluster/compose.yml up -d --build
+	docker compose $(BASE) -f labs/neo4j-cluster/compose.yml up -d --build --remove-orphans
 	@echo "Waiting for Neo4j cluster nodes to start..."
 	sleep 20
 	$(MAKE) neo4j-cluster-init

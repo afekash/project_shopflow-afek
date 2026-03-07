@@ -44,9 +44,9 @@ Why 16,384 slots instead of a continuous ring? Fixed slots make the cluster conf
 ```mermaid
 flowchart LR
     subgraph ClusterSlots["Slot Distribution (3 primaries)"]
-        N1["Node 1\nSlots 0–5460"]
-        N2["Node 2\nSlots 5461–10922"]
-        N3["Node 3\nSlots 10923–16383"]
+        N1["Node 1<br/>Slots 0–5460"]
+        N2["Node 2<br/>Slots 5461–10922"]
+        N3["Node 3<br/>Slots 10923–16383"]
     end
     K1["key: 'user:42'"] -->|"CRC16 % 16384 = 4080"| N1
     K2["key: 'product:1'"] -->|"CRC16 % 16384 = 7228"| N2
@@ -60,12 +60,12 @@ from redis.cluster import RedisCluster
 rc = RedisCluster(host="redis-node-1", port=6380, decode_responses=True)
 
 # See how slots are distributed across the cluster
+# cluster_slots() returns {(start, end): {"primary": (host, port), "replicas": [...]}}
 slots = rc.cluster_slots()
 print("Slot ranges per node:")
-for slot_range in slots:
-    start, end, *nodes = slot_range
-    primary = nodes[0]
-    print(f"  slots {start:5d}-{end:5d} → {primary['host']}:{primary['port']}")
+for (start, end), info in slots.items():
+    host, port = info["primary"]
+    print(f"  slots {start:5d}-{end:5d} → {host}:{port}")
 ```
 
 ---
@@ -104,9 +104,10 @@ print(f"product:1001   = {rc.get('product:1001:name')}")
 print(f"session:abc123 = {rc.get('session:abc123')}")
 
 # Inspect which node holds a key
+# key_slot() expects bytes — encode the string first
 def get_key_slot(key: str) -> int:
     from redis.crc import key_slot
-    return key_slot(key)
+    return key_slot(key.encode())
 
 for key in ["user:42:name", "product:1001:name", "session:abc123"]:
     slot = get_key_slot(key)

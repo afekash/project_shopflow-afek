@@ -98,7 +98,7 @@ for name, score in players:
     r.zadd("leaderboard:global", {name: score})
 
 # Top 3 with scores
-top3 = r.zrange("leaderboard:global", 0, 2, withscores=True, rev=True)
+top3 = r.zrevrange("leaderboard:global", 0, 2, withscores=True)
 print("Top 3:")
 for rank, (player, score) in enumerate(top3, 1):
     print(f"  #{rank} {player}: {int(score)}")

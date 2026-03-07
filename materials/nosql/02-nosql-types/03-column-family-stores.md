@@ -46,12 +46,12 @@ B-trees require random I/O for every write (finding the right page on disk and u
 
 ```mermaid
 graph TD
-    Client["Client Write"] --> WAL["1. Write-Ahead Log (WAL)\nDisk append - durability"]
-    WAL --> Memtable["2. Memtable\nIn-memory sorted tree\n(fast writes)"]
+    Client["Client Write"] --> WAL["1. Write-Ahead Log (WAL)<br/>Disk append - durability"]
+    WAL --> Memtable["2. Memtable<br/>In-memory sorted tree<br/>(fast writes)"]
     Memtable --> Flush{"Memtable full?"}
-    Flush -->|Yes| SSTable["3. Flush to SSTable\nImmutable sorted file on disk"]
+    Flush -->|Yes| SSTable["3. Flush to SSTable<br/>Immutable sorted file on disk"]
     Flush -->|No| Memtable
-    SSTable --> Compaction["4. Background Compaction\nMerge SSTables, remove tombstones"]
+    SSTable --> Compaction["4. Background Compaction<br/>Merge SSTables, remove tombstones"]
 ```
 
 **Step 1 - WAL (Write-Ahead Log)**: Every write is appended to a sequential log file for durability. If the node crashes, the WAL is replayed on restart. See [Write-Ahead Logs](../../core-concepts/05-replication-and-availability/03-write-ahead-logs.md) for the general principle.
