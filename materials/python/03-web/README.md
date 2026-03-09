@@ -27,11 +27,12 @@ By the end of this module, you will:
 | Lesson | Duration | Topics | Key Concepts |
 |--------|----------|--------|--------------|
 | [01 - How Web APIs Work](01-how-web-apis-work.md) | ~5 min | HTTP basics | Client-server, GET/POST, status codes, JSON |
-| [02 - FastAPI Routes](02-fastapi-routes.md) | ~10 min | Building endpoints | Decorators, path params, query params, POST body, Swagger UI |
-| [03 - Pydantic Models](03-pydantic-models.md) | ~7 min | Input validation | BaseModel, ValidationError, nested models, response_model |
-| [04 - Connecting to the Project](04-connecting-to-the-project.md) | ~5 min | Project context | Full request flow, what's scaffolded, where DBAccess fits |
+| [02 - Running a Real Server](02-running-a-real-server.md) | ~5 min | uvicorn, live server | ASGI, uvicorn, port binding, Swagger UI |
+| [03 - FastAPI Routes](03-fastapi-routes.md) | ~10 min | Building endpoints | Decorators, path params, query params, POST body, Swagger UI |
+| [04 - Pydantic Models](04-pydantic-models.md) | ~7 min | Input validation | BaseModel, ValidationError, nested models, response_model |
+| [05 - Connecting to the Project](05-connecting-to-the-project.md) | ~5 min | Project context | Full request flow, what's scaffolded, where DBAccess fits |
 
-**Total:** ~27 minutes
+**Total:** ~32 minutes
 
 ## Course Navigation
 

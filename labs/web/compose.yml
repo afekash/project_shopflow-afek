@@ -9,3 +9,5 @@ services:
     build:
       args:
         LAB: web
+    ports:
+      - "8000:8000"

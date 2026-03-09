@@ -152,6 +152,6 @@ When the server is running, FastAPI auto-generates a fully interactive API brows
 In the capstone project, Swagger UI is your primary tool for manually testing your `DBAccess` methods end-to-end.
 
 **Navigation:**
-- **Previous**: [← How Web APIs Work](01-how-web-apis-work.md)
-- **Next**: [Pydantic Models →](03-pydantic-models.md)
+- **Previous**: [← Running a Real Server](02-running-a-real-server.md)
+- **Next**: [Pydantic Models →](04-pydantic-models.md)
 - **Home**: [Web APIs Module](README.md)

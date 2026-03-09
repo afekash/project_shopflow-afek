@@ -112,5 +112,5 @@ Every `DBAccess` method you implement is called by a corresponding pre-built rou
 | All `DBAccess` methods | **You build** | `src/db_access.py` |
 
 **Navigation:**
-- **Previous**: [← Pydantic Models](03-pydantic-models.md)
+- **Previous**: [← Pydantic Models](04-pydantic-models.md)
 - **Home**: [Web APIs Module](README.md)

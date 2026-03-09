@@ -122,5 +122,5 @@ print("Body:", response.json())               # {'detail': 'Product 999 not foun
 | JSON | The data format for both requests and responses |
 
 **Navigation:**
-- **Next**: [FastAPI Routes →](02-fastapi-routes.md)
+- **Next**: [Running a Real Server →](02-running-a-real-server.md)
 - **Home**: [Web APIs Module](README.md)

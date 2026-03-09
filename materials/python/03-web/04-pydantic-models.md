@@ -27,7 +27,7 @@ class OrderItemDC:
     product_id: int
     quantity: int
 
-bad = OrderItemDC(product_id="not-a-number", quantity=2)
+bad = OrderItemDC(product_id="1", quantity=2)
 print(type(bad.product_id))   # <class 'str'>  — silently accepted!
 
 # Pydantic model: validates on creation
@@ -35,7 +35,7 @@ class OrderItemPM(BaseModel):
     product_id: int
     quantity: int
 
-good = OrderItemPM(product_id=1, quantity=2)
+good = OrderItemPM(product_id="1", quantity=2)
 print(type(good.product_id))  # <class 'int'>
 ```
 
@@ -176,6 +176,6 @@ print(response.json())
 In the capstone project, all Pydantic models are pre-defined in `src/models/requests.py` and `src/models/responses.py`. Your `DBAccess` methods receive the already-parsed values as plain Python types (`int`, `str`, `list`). You never instantiate a Pydantic model yourself.
 
 **Navigation:**
-- **Previous**: [← FastAPI Routes](02-fastapi-routes.md)
-- **Next**: [Connecting to the Project →](04-connecting-to-the-project.md)
+- **Previous**: [← FastAPI Routes](03-fastapi-routes.md)
+- **Next**: [Connecting to the Project →](05-connecting-to-the-project.md)
 - **Home**: [Web APIs Module](README.md)
