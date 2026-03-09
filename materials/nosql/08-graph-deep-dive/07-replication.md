@@ -85,15 +85,47 @@ Neo4j solves this with **bookmarks**: after a write transaction, the client rece
 ## Hands-On: Observing the Cluster
 
 ```{code-cell} python
-import os
+import os, time, socket
 from neo4j import GraphDatabase, RoutingControl
+from neo4j.exceptions import AuthError, ServiceUnavailable
 
-CLUSTER_URI = os.environ.get("NEO4J_CLUSTER_URI", "neo4j://neo4j-core1:7687")
+ALL_NODES = [("neo4j-core1", 7687), ("neo4j-core2", 7687), ("neo4j-core3", 7687)]
 AUTH = ("neo4j", "password")
 
-driver = GraphDatabase.driver(CLUSTER_URI, auth=AUTH)
-driver.verify_connectivity()
-print(f"Connected to cluster at {CLUSTER_URI}")
+def live_nodes():
+    """Return only the cluster nodes that currently resolve in DNS (i.e. are running)."""
+    result = []
+    for host, port in ALL_NODES:
+        try:
+            socket.getaddrinfo(host, port)
+            result.append((host, port))
+        except socket.gaierror:
+            pass
+    return result
+
+def cluster_resolver(address):
+    return live_nodes()
+
+# On a fresh cluster start the system database needs a few extra seconds to
+# initialise before it accepts password auth. Retry with backoff.
+for attempt in range(10):
+    try:
+        nodes = live_nodes()
+        bootstrap_host, bootstrap_port = nodes[0]
+        driver = GraphDatabase.driver(
+            f"neo4j://{bootstrap_host}:{bootstrap_port}",
+            auth=AUTH,
+            resolver=cluster_resolver,
+        )
+        driver.verify_connectivity()
+        print(f"Connected to cluster via {bootstrap_host}")
+        break
+    except (AuthError, ServiceUnavailable) as e:
+        print(f"  Not ready yet ({e.__class__.__name__}), retrying in 5 s…")
+        driver.close()
+        time.sleep(5)
+else:
+    raise RuntimeError("Cluster did not become ready in time")
 ```
 
 ```{code-cell} python
@@ -136,12 +168,24 @@ with driver.session(database="neo4j", bookmarks=bookmark) as read_session:
 ```
 
 ```{code-cell} python
-# Check cluster topology via the system database
+# Check cluster topology via the system database.
+# SHOW SERVERS returns an internal UUID in `name`; `address` holds the bolt
+# advertised address (e.g. "neo4j-core1:7687"), so we strip the port to get
+# the human-readable service name.
+def resolve(server_record):
+    """Return the service hostname from a SHOW SERVERS record."""
+    address = server_record["address"]   # e.g. "neo4j-core1:7687"
+    if address:
+        return address.split(":")[0]         # e.g. "neo4j-core1"
+    return None
+
 with driver.session(database="system") as session:
     result = session.run("SHOW SERVERS")
     print("\nCluster members:")
     for r in result:
-        print(f"  {r['name']} | state={r['state']} | health={r['health']}")
+        host = resolve(r)
+        if host:
+            print(f"  {host} | state={r['state']} | health={r['health']}")
 
 driver.close()
 ```
@@ -157,6 +201,113 @@ During the election window (typically 5–15 seconds), writes to the cluster wil
 If a majority of primaries are lost (e.g., 2 of 3 fail), the cluster enters a **read-only state** — it refuses writes to prevent data divergence. This is the CP behavior discussed in the tradeoffs lesson: Neo4j chooses to stop accepting writes rather than allow a split-brain state.
 
 > **Compare with Redis Sentinel:** Redis Sentinel uses a similar majority election mechanism. The key difference is that Redis can be configured for weaker consistency (`min-replicas-to-write 0`) to stay writable under partition. Neo4j's Raft model provides stronger guarantees by default.
+
+### Hands-On: Simulating a Leader Failover
+
+```{code-cell} python
+import subprocess, time
+from neo4j import GraphDatabase
+
+AUTH = ("neo4j", "password")
+
+CORE_CONTAINERS = ["neo4j-core1", "neo4j-core2", "neo4j-core3"]
+
+def docker_status():
+    """Return a dict of {container_name: 'running'|'exited'|...} via docker inspect."""
+    result = {}
+    for name in CORE_CONTAINERS:
+        out = subprocess.run(
+            ["docker", "inspect", "--format", "{{.State.Status}}", name],
+            capture_output=True, text=True
+        )
+        result[name] = out.stdout.strip() if out.returncode == 0 else "unknown"
+    return result
+
+def show_topology(driver):
+    """Print cluster topology from Neo4j alongside ground-truth Docker container status."""
+    # Ground-truth liveness from Docker — not subject to cluster cache lag
+    container_state = docker_status()
+    print("  Docker container states (ground truth):")
+    for name, state in container_state.items():
+        marker = "✓" if state == "running" else "✗"
+        print(f"    {marker} {name}: {state}")
+
+    # Neo4j cluster view — may lag behind by a few seconds after a failure
+    with driver.session(database="system") as s:
+        rows = list(s.run(
+            "SHOW DATABASES YIELD name, address, role, writer "
+            "WHERE name = 'neo4j'"
+        ))
+    writer = next((r["address"].split(":")[0] for r in rows if r["writer"]), "unknown")
+    print(f"\n  Neo4j cluster view (may be stale):")
+    print(f"    Leader (writer): {writer}")
+    with driver.session(database="system") as s:
+        for r in s.run("SHOW SERVERS"):
+            host = resolve(r)
+            docker_state = container_state.get(host, "unknown")
+            mismatch = " ← STALE" if r["health"] == "AVAILABLE" and docker_state != "running" else ""
+            print(f"    {host} | state={r['state']} | health={r['health']} | docker={docker_state}{mismatch}")
+
+    return writer
+
+driver = GraphDatabase.driver(
+    "neo4j://neo4j-core1:7687",
+    auth=AUTH,
+    resolver=cluster_resolver,  # defined in the first cell — tries all three nodes
+)
+print("=== Topology before failover ===")
+leader = show_topology(driver)
+print(f"\nLeader to stop: {leader}")
+with open("/tmp/neo4j_leader", "w") as f:
+    f.write(leader)
+```
+
+```{code-cell} python
+%%bash
+LEADER=$(cat /tmp/neo4j_leader)
+echo "Stopping leader: $LEADER"
+docker stop "$LEADER"
+```
+
+```{code-cell} python
+# Give Raft ~15 seconds to detect the failure and elect a new leader
+# (leader_failure_detection_window=5s-8s + election rounds).
+print("Waiting 15 s for re-election...")
+time.sleep(15)
+
+# Reconnect via a surviving node — the stopped leader may no longer resolve.
+nodes = live_nodes()  # only returns nodes currently up
+bootstrap_host = nodes[0][0]
+
+driver.close()
+driver = GraphDatabase.driver(f"neo4j://{bootstrap_host}:7687", auth=AUTH, resolver=cluster_resolver)
+print("\n=== Topology after leader failure ===")
+show_topology(driver)
+# Any "← STALE" marker above means Neo4j's cluster metadata hasn't propagated
+# yet — the Docker state is the ground truth for actual liveness.
+```
+
+```{code-cell} python
+%%bash
+# Bring the stopped node back up.
+LEADER=$(docker ps -a --filter "status=exited" --filter "name=neo4j-core" \
+  --format "{{.Names}}" | head -1)
+echo "Restarting: $LEADER"
+docker start "$LEADER"
+```
+
+```{code-cell} python
+# Allow the rejoined node to catch up with the Raft log before querying.
+print("Waiting 20 s for the node to rejoin...")
+time.sleep(20)
+
+driver.close()
+driver = GraphDatabase.driver("neo4j://neo4j-core1:7687", auth=AUTH, resolver=cluster_resolver)
+print("\n=== Topology after node rejoin ===")
+show_topology(driver)
+
+driver.close()
+```
 
 ---
 

@@ -5,6 +5,35 @@
 # After starting, run: make neo4j-cluster-init
 #
 # Usage: make lab-neo4j-cluster
+#
+# Each node pins discovery, cluster RPC, and raft advertised addresses to its
+# service name so peers can reach each other by name after restarts.
+# server.routing.advertised_address is intentionally NOT set — it is for
+# intra-cluster use only and rejects external (Python driver) connections.
+# External clients use neo4j://neo4j-core1:7687 (standard bolt port).
+
+x-neo4j-common: &neo4j-common
+  image: neo4j:5-enterprise
+  environment: &neo4j-common-env
+    NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+    NEO4J_AUTH: neo4j/password
+    NEO4J_initial_server_mode__constraint: PRIMARY
+    NEO4J_dbms_cluster_discovery_resolver__type: LIST
+    NEO4J_dbms_cluster_discovery_endpoints: "neo4j-core1:5000,neo4j-core2:5000,neo4j-core3:5000"
+    NEO4J_dbms_cluster_minimum__initial__system__primaries__count: "3"
+    NEO4J_initial_dbms_default__primaries__count: "3"
+    NEO4J_server_default__listen__address: "0.0.0.0"
+    # Tighter Raft timeouts for snappier failover in the classroom demo.
+    # Default leader_failure_detection_window is 20s-23s; 5s-8s is safe for a
+    # 3-node local cluster where network latency is <1ms.
+    NEO4J_dbms_cluster_raft_leader__failure__detection__window: "5s-8s"
+    NEO4J_dbms_cluster_raft_election__failure__detection__window: "2s-3s"
+  healthcheck:
+    test: ["CMD", "wget", "-qO-", "http://localhost:7474"]
+    interval: 15s
+    timeout: 10s
+    retries: 15
+  restart: unless-stopped
 
 services:
   workspace:
@@ -23,61 +52,40 @@ services:
         condition: service_healthy
 
   neo4j-core1:
+    <<: *neo4j-common
     container_name: neo4j-core1
-    image: neo4j:5-enterprise
     environment:
-      - NEO4J_AUTH=neo4j/password
-      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
-      - NEO4J_initial_server_mode__constraint=PRIMARY
-      - NEO4J_dbms_cluster_discovery_resolver__type=LIST
-      - NEO4J_dbms_cluster_discovery_endpoints=neo4j-core1:5000,neo4j-core2:5000,neo4j-core3:5000
-      - NEO4J_server_bolt_advertised__address=neo4j-core1:7687
+      <<: *neo4j-common-env
+      NEO4J_server_discovery_advertised__address: neo4j-core1:5000
+      NEO4J_server_cluster_advertised__address: neo4j-core1:6000
+      NEO4J_server_cluster_raft_advertised__address: neo4j-core1:7000
+      NEO4J_server_bolt_advertised__address: neo4j-core1:7687
     ports:
       - "7474:7474"
       - "7687:7687"
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:7474"]
-      interval: 15s
-      timeout: 10s
-      retries: 15
-    restart: unless-stopped
 
   neo4j-core2:
+    <<: *neo4j-common
     container_name: neo4j-core2
-    image: neo4j:5-enterprise
     environment:
-      - NEO4J_AUTH=neo4j/password
-      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
-      - NEO4J_initial_server_mode__constraint=PRIMARY
-      - NEO4J_dbms_cluster_discovery_resolver__type=LIST
-      - NEO4J_dbms_cluster_discovery_endpoints=neo4j-core1:5000,neo4j-core2:5000,neo4j-core3:5000
-      - NEO4J_server_bolt_advertised__address=neo4j-core2:7688
+      <<: *neo4j-common-env
+      NEO4J_server_discovery_advertised__address: neo4j-core2:5000
+      NEO4J_server_cluster_advertised__address: neo4j-core2:6000
+      NEO4J_server_cluster_raft_advertised__address: neo4j-core2:7000
+      NEO4J_server_bolt_advertised__address: neo4j-core2:7687
     ports:
       - "7475:7474"
       - "7688:7687"
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:7474"]
-      interval: 15s
-      timeout: 10s
-      retries: 15
-    restart: unless-stopped
 
   neo4j-core3:
+    <<: *neo4j-common
     container_name: neo4j-core3
-    image: neo4j:5-enterprise
     environment:
-      - NEO4J_AUTH=neo4j/password
-      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
-      - NEO4J_initial_server_mode__constraint=PRIMARY
-      - NEO4J_dbms_cluster_discovery_resolver__type=LIST
-      - NEO4J_dbms_cluster_discovery_endpoints=neo4j-core1:5000,neo4j-core2:5000,neo4j-core3:5000
-      - NEO4J_server_bolt_advertised__address=neo4j-core3:7689
+      <<: *neo4j-common-env
+      NEO4J_server_discovery_advertised__address: neo4j-core3:5000
+      NEO4J_server_cluster_advertised__address: neo4j-core3:6000
+      NEO4J_server_cluster_raft_advertised__address: neo4j-core3:7000
+      NEO4J_server_bolt_advertised__address: neo4j-core3:7687
     ports:
       - "7476:7474"
       - "7689:7687"
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:7474"]
-      interval: 15s
-      timeout: 10s
-      retries: 15
-    restart: unless-stopped

@@ -7,10 +7,6 @@ kernelspec:
 
 # Tradeoffs and Limitations
 
-```{note}
-This lesson requires the Neo4j lab. Run `make lab-neo4j` before starting.
-```
-
 Graph databases are a genuine solution to a real class of problems. But they are also misapplied frequently — chosen because the data "could be a graph," not because the queries demand it. This lesson is about understanding what graph databases are bad at, where they sit on the CAP triangle, how they handle transactions, and what operational surprises you should expect.
 
 ---

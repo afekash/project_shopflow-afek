@@ -7,10 +7,6 @@ kernelspec:
 
 # The Property Graph Model
 
-```{note}
-This lesson requires the Neo4j lab. Run `make lab-neo4j` before starting.
-```
-
 Graph databases are not all the same. There are two dominant data models for representing graphs: the **property graph** and **RDF triples**. Neo4j, Amazon Neptune (graph mode), and most modern graph databases use the property graph model. Understanding what it is — and what it enables — is the foundation for everything else in this module.
 
 ---
@@ -90,7 +86,11 @@ You can add constraints and indexes when needed — Neo4j supports uniqueness co
 
 ---
 
-## Hands-On: Building a Property Graph
+## Hands-On: Warm Introduction Routing
+
+The previous lesson showed variable-depth traversal. This example shows what **relationship properties** unlock: queries where the *quality* of a path matters, not just its length.
+
+The scenario: you want an introduction to someone. The naive answer is "shortest path" — fewest hops. But a 4-hop path through people you genuinely know beats a 2-hop path through a coworker you barely know. The graph stores a `familiarity` score (1–10) on every edge, and we want the path whose weakest link is strongest — the classic **maximum bottleneck path** problem.
 
 ```{code-cell} python
 from neo4j import GraphDatabase
@@ -101,51 +101,94 @@ with driver.session() as session:
     session.run("MATCH (n) DETACH DELETE n")
 
     session.run("""
-        CREATE (neo4j_inc:Company {name: 'Neo4j Inc', founded: 2007})
-        CREATE (graphdb:Product   {name: 'Neo4j', type: 'Database', category: 'Graph'})
-        CREATE (bloom:Product     {name: 'Bloom',  type: 'Tool',     category: 'Visualization'})
-        CREATE (alice:Person      {name: 'Alice',  role: 'Engineer'})
-        CREATE (bob:Person        {name: 'Bob',    role: 'Architect'})
+        CREATE (dan:Person      {name: 'Dan'})
+        CREATE (maya:Person     {name: 'Maya'})
+        CREATE (roy:Person      {name: 'Roy'})
+        CREATE (noa:Person      {name: 'Noa'})
+        CREATE (uri:Person      {name: 'Uri'})
+        CREATE (tal:Person      {name: 'Tal'})
 
-        CREATE (alice)-[:WORKS_AT  {since: 2021}]->(neo4j_inc)
-        CREATE (bob)-[:WORKS_AT    {since: 2019}]->(neo4j_inc)
-        CREATE (alice)-[:USES      {frequency: 'daily'}]->(graphdb)
-        CREATE (bob)-[:USES        {frequency: 'weekly'}]->(bloom)
-        CREATE (neo4j_inc)-[:MAKES]->(graphdb)
-        CREATE (neo4j_inc)-[:MAKES]->(bloom)
-        CREATE (alice)-[:KNOWS     {context: 'work'}]->(bob)
+        // Warm family path: strong bonds all the way through
+        CREATE (dan)-[:KNOWS  {familiarity: 10, type: 'sibling'}]->(maya)
+        CREATE (maya)-[:KNOWS {familiarity:  9, type: 'friend'}]->(noa)
+        CREATE (noa)-[:KNOWS  {familiarity:  8, type: 'friend'}]->(uri)
+        CREATE (uri)-[:KNOWS  {familiarity:  9, type: 'sibling'}]->(tal)
+
+        // Cold shortcut: fewer hops but weak links
+        CREATE (dan)-[:KNOWS {familiarity:  3, type: 'coworker'}]->(roy)
+        CREATE (roy)-[:KNOWS {familiarity:  2, type: 'neighbor'}]->(tal)
     """)
 
-print("Property graph created")
+print("Social graph created")
 ```
 
 ```{code-cell} python
+# Find all paths from Dan to Tal up to 5 hops.
+#
+# Cost model: each hop contributes 1/familiarity to the total accumulated cost.
+#   - familiarity=10  →  hop cost = 0.10  (very warm, cheap)
+#   - familiarity=2   →  hop cost = 0.50  (cold, expensive)
+#
+# Costs accumulate across hops — a longer cold path is genuinely worse than a
+# shorter warm one. Max possible cost per hop is 1.0 (familiarity=1).
 with driver.session() as session:
     result = session.run("""
-        MATCH (p:Person)-[r:WORKS_AT]->(c:Company)-[:MAKES]->(prod:Product)
-        RETURN p.name AS person, p.role AS role, 
-               r.since AS joined, prod.name AS product
-        ORDER BY r.since
+        MATCH path = (dan:Person {name: 'Dan'})-[:KNOWS*1..5]->(tal:Person {name: 'Tal'})
+        WITH path,
+             [r IN relationships(path) | r.familiarity] AS scores,
+             [n IN nodes(path) | n.name]                AS names,
+             [r IN relationships(path) | r.type]        AS rel_types
+        WITH names, rel_types, length(path) AS hops, scores,
+             reduce(cost = 0.0, s IN scores | cost + (1.0 / s)) AS total_cost
+        RETURN names, rel_types, hops, scores,
+               round(total_cost, 3) AS coldness
+        ORDER BY coldness ASC
     """)
-    print("People, their company, and the products their company makes:")
-    for record in result:
-        print(f"  {record['person']} ({record['role']}, joined {record['joined']}) → {record['product']}")
+
+    print("Introduction paths from Dan to Tal, ranked by warmth (coldness ↑ = worse):\n")
+    print(f"  {'Coldness':>8}   {'Hops':>4}   Route")
+    print(f"  {'-'*8}   {'-'*4}   {'-'*60}")
+    for r in result:
+        steps = list(zip(r["names"], r["rel_types"] + [""]))
+        route = " → ".join(
+            f"{name} [{rel}]" if rel else name for name, rel in steps
+        )
+        hop_details = " + ".join(f"1/{f}={1/f:.2f}" for f in r["scores"])
+        print(f"  {r['coldness']:>8.3f}   {r['hops']:>4}   {route}")
+        print(f"  {'':>8}   {'':>4}   {hop_details}  =  {r['coldness']:.3f}")
 ```
 
 ```{code-cell} python
+# Shortest path by hop count — the naive answer
 with driver.session() as session:
     result = session.run("""
-        MATCH (p:Person)-[:USES]->(prod:Product)
-        RETURN p.name AS person, prod.name AS product, prod.category AS category
+        MATCH p = shortestPath(
+            (dan:Person {name: 'Dan'})-[:KNOWS*]-(tal:Person {name: 'Tal'})
+        )
+        WITH p,
+             [r IN relationships(p) | r.familiarity] AS scores,
+             [n IN nodes(p) | n.name]                AS names,
+             [r IN relationships(p) | r.type]        AS rel_types
+        WITH names, rel_types, length(p) AS hops, scores,
+             reduce(cost = 0.0, s IN scores | cost + (1.0 / s)) AS total_cost
+        RETURN names, rel_types, hops, scores,
+               round(total_cost, 3) AS coldness
     """)
-    print("Who uses what:")
-    for record in result:
-        print(f"  {record['person']} uses {record['product']} ({record['category']})")
+    print("Shortest path (fewest hops):\n")
+    for r in result:
+        steps = list(zip(r["names"], r["rel_types"] + [""]))
+        route = " → ".join(
+            f"{name} [{rel}]" if rel else name for name, rel in steps
+        )
+        hop_details = " + ".join(f"1/{f}={1/f:.2f}" for f in r["scores"])
+        print(f"  {r['hops']} hop(s)  |  coldness = {r['coldness']:.3f}")
+        print(f"  Path:  {route}")
+        print(f"  Cost:  {hop_details}  =  {r['coldness']:.3f}")
 
 driver.close()
 ```
 
-Notice that nodes of the same label (`Product`) have different meaningful properties (`type`, `category`), and relationships carry their own properties (`since`, `frequency`). This richness is native to the property graph model — not bolted on.
+The key insight: **shortest path is the wrong metric for warm introductions**. The coldness score accumulates `1 / familiarity` across every hop — so a single weak link (familiarity=2, cost=0.50) meaningfully drags up the total, and a longer path of strong ties can still beat a short cold one. This cost lives entirely on the relationships — it could not be expressed without edge properties.
 
 ---
 

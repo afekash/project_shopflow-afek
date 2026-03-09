@@ -12,7 +12,7 @@
 #   (sidecars + workspace overrides). The LAB build arg installs per-lab Python deps.
 # ────────────────────────────────────────────────────────────────────────────
 
-.PHONY: docs lab-orm lab-sql lab-nosql lab-replica-set lab-sharded lab-distributed lab-web \
+.PHONY: docs lab-preflight lab-orm lab-sql lab-nosql lab-replica-set lab-sharded lab-distributed lab-web \
         lab-redis lab-redis-sentinel lab-redis-cluster \
         lab-neo4j lab-neo4j-cluster \
         down reset shell convert \
@@ -61,74 +61,75 @@ docs:
 
 # ─── Lab environments ───────────────────────────────────────────────────────
 
-lab-orm:
+# Shared pre-flight: tear down any running lab before starting a new one.
+lab-preflight: down
+
+lab-orm: lab-preflight
 	docker compose $(BASE) -f labs/orm/compose.yml up -d --build --remove-orphans
 	@echo "PostgreSQL available at localhost:5432"
 	@echo "MyST docs: http://localhost:3000"
 
-lab-sql:
+lab-sql: lab-preflight
 	docker compose $(BASE) -f labs/sql/compose.yml up -d --build --remove-orphans
 	@echo "MSSQL available at localhost:1433 (SA / see .env or default password)"
 	@echo "Run 'make sql-restore' to restore AdventureWorks and Northwind databases."
 	@echo "MyST docs: http://localhost:3000"
 
-lab-nosql:
+lab-nosql: lab-preflight
 	docker compose $(BASE) -f labs/nosql/compose.yml up -d --build --remove-orphans
 	@echo "MongoDB available at localhost:27017"
 	@echo "MyST docs: http://localhost:3000"
 
-lab-replica-set:
+lab-replica-set: lab-preflight
 	docker compose $(BASE) -f labs/replica-set/compose.yml up -d --build --remove-orphans
 	@echo "Waiting for Mongo nodes to start..."
 	sleep 5
 	$(MAKE) replica-set-init
 	@echo "MyST docs: http://localhost:3000"
 
-lab-sharded:
+lab-sharded: lab-preflight
 	docker compose $(BASE) -f labs/sharded/compose.yml up -d --build --remove-orphans
 	@echo "Waiting for cluster nodes to start..."
 	sleep 10
 	$(MAKE) sharded-init
 	@echo "MyST docs: http://localhost:3000"
 
-lab-distributed:
+lab-distributed: lab-preflight
 	docker compose $(BASE) -f labs/distributed/compose.yml up -d --build --remove-orphans
 	@echo "Gateway API: http://localhost:8000"
 	@echo "Redis:       localhost:6379"
 	@echo "MyST docs:   http://localhost:3000"
 
-lab-web:
+lab-web: lab-preflight
 	docker compose $(BASE) -f labs/web/compose.yml up -d --build --remove-orphans
 	@echo "MyST docs: http://localhost:3000"
 
-lab-redis:
+lab-redis: lab-preflight
 	docker compose $(BASE) -f labs/redis/compose.yml up -d --build --remove-orphans
 	@echo "Redis available at localhost:6379"
 	@echo "MyST docs: http://localhost:3000"
 
-lab-redis-sentinel:
+lab-redis-sentinel: lab-preflight
 	docker compose $(BASE) -f labs/redis-sentinel/compose.yml up -d --build --remove-orphans
 	@echo "Redis nodes:     redis-1:6379, redis-2:6379, redis-3:6379"
 	@echo "Redis sentinels: redis-sentinel-1:26379 (quorum of 3)"
 	@echo "MyST docs:       http://localhost:3000"
 
-lab-redis-cluster:
+lab-redis-cluster: lab-preflight
 	docker compose $(BASE) -f labs/redis-cluster/compose.yml up -d --build --remove-orphans
 	@echo "Waiting for cluster nodes to start..."
 	sleep 8
 	$(MAKE) redis-cluster-init
 	@echo "MyST docs: http://localhost:3000"
 
-lab-neo4j:
+lab-neo4j: lab-preflight
 	docker compose $(BASE) -f labs/neo4j/compose.yml up -d --build --remove-orphans
 	@echo "Neo4j browser: http://localhost:7474  (neo4j / password)"
 	@echo "Bolt:          localhost:7687"
 	@echo "MyST docs:     http://localhost:3000"
 
-lab-neo4j-cluster:
+lab-neo4j-cluster: lab-preflight
 	docker compose $(BASE) -f labs/neo4j-cluster/compose.yml up -d --build --remove-orphans
-	@echo "Waiting for Neo4j cluster nodes to start..."
-	sleep 20
 	$(MAKE) neo4j-cluster-init
 	@echo "MyST docs: http://localhost:3000"
 

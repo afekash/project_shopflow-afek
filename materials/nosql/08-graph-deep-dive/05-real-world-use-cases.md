@@ -7,10 +7,6 @@ kernelspec:
 
 # Real-World Use Cases
 
-```{note}
-This lesson requires the Neo4j lab. Run `make lab-neo4j` before starting.
-```
-
 Graph databases have moved well beyond their origins as social network infrastructure. Today they are core infrastructure in cybersecurity, machine learning pipelines, AI knowledge systems, and supply chain operations. This lesson walks through concrete patterns in each domain — not toy examples, but the shapes of real production deployments.
 
 ---

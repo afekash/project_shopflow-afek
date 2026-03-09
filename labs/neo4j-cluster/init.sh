@@ -17,17 +17,33 @@ for core in neo4j-core1 neo4j-core2 neo4j-core3; do
 done
 
 echo ""
-echo "Waiting for cluster to form (leader election)..."
-sleep 10
+echo "Waiting for cluster to form and neo4j database to accept writes..."
+until $COMPOSE exec -T neo4j-core1 cypher-shell \
+    -u neo4j -p password --database neo4j \
+    "RETURN 1" \
+    > /dev/null 2>&1; do
+  sleep 3
+done
+echo "Cluster ready — neo4j database accepting connections."
 
 echo ""
-echo "Seeding dataset on leader (neo4j-core1)..."
-$COMPOSE exec -T neo4j-core1 cypher-shell \
+echo "Seeding dataset via cluster routing..."
+# Find which container is currently hosting the neo4j database writer and
+# exec into it directly — avoids the routing table lookup that fails on
+# non-hosting nodes.
+WRITER_ADDR=$($COMPOSE exec -T neo4j-core1 cypher-shell \
+  -u neo4j -p password --database system \
+  "SHOW DATABASES YIELD name, address, writer WHERE name='neo4j' AND writer=true" \
+  2>/dev/null | grep '"neo4j"' | grep -o '"neo4j-core[^"]*"' | head -1 | tr -d '"')
+WRITER_HOST=$(echo "$WRITER_ADDR" | cut -d: -f1)
+echo "  Writing via: $WRITER_HOST"
+
+$COMPOSE exec -T "$WRITER_HOST" cypher-shell \
   -u neo4j -p password \
   --database neo4j \
   "CREATE CONSTRAINT person_id IF NOT EXISTS FOR (p:Person) REQUIRE p.id IS UNIQUE;"
 
-$COMPOSE exec -T neo4j-core1 cypher-shell \
+$COMPOSE exec -T "$WRITER_HOST" cypher-shell \
   -u neo4j -p password \
   --database neo4j \
   "

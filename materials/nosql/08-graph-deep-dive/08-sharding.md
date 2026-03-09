@@ -58,8 +58,8 @@ Shard 2: copy of (Carol) — (Dave edge) — (Dave)
 Traversal within each shard is local, but writes to Carol must update all replicas. Storage increases proportionally to how many shards a high-degree node touches.
 
 Neither strategy is universally better. The choice depends on graph topology:
-- Vertex-cut is better for **dense, hub-and-spoke graphs** (many supernodes)
-- Edge-cut is better for **balanced, cluster-structured graphs** (natural communities)
+- Vertex-cut is better for **dense, hub-and-spoke graphs** (many supernodes). When a small number of nodes connect to millions of others, edge-cut would place the majority of edges across shard boundaries, making almost every traversal a cross-shard call. Vertex-cut instead replicates those high-degree nodes onto every shard that needs them, keeping traversals local at the cost of write amplification to all replicas.
+- Edge-cut is better for **balanced, cluster-structured graphs** (natural communities). When the graph breaks naturally into dense clusters with only a few inter-cluster edges, most traversals stay within a single shard and only a small fraction of edges are ever "cut." Vertex-cut would add replication overhead without any benefit, since there are no supernodes to justify it.
 
 ---
 
