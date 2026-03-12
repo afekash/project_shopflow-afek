@@ -162,9 +162,10 @@ project:
     - file: materials/python/03-web/README.md
       children:
         - file: materials/python/03-web/01-how-web-apis-work.md
-        - file: materials/python/03-web/02-fastapi-routes.md
-        - file: materials/python/03-web/03-pydantic-models.md
-        - file: materials/python/03-web/04-connecting-to-the-project.md
+        - file: materials/python/03-web/02-running-a-real-server.md
+        - file: materials/python/03-web/03-fastapi-routes.md
+        - file: materials/python/03-web/04-pydantic-models.md
+        - file: materials/python/03-web/05-connecting-to-the-project.md
 
     - file: materials/nosql/README.md
       children:
