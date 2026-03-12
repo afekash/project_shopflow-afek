@@ -20,7 +20,7 @@ services:
     ports:
       - "3000:3000"
       - "3100:3100"
-      - "8889:8888"
+      - "8888:8888"
     environment:
       - JUPYTER_TOKEN=${JUPYTER_TOKEN:-}
     command: ["bash", "labs/base/init.sh"]
