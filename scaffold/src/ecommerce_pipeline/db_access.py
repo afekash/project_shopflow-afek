@@ -11,9 +11,18 @@ starting each phase.
 You also implement scripts/migrate.py and scripts/seed.py alongside this file.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 from itertools import combinations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import neo4j
+    import redis as redis_lib
+    from pymongo.database import Database as MongoDatabase
+    from sqlalchemy.orm import sessionmaker
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +30,10 @@ logger = logging.getLogger(__name__)
 class DBAccess:
     def __init__(
         self,
-        pg_session_factory,   # sqlalchemy.orm.sessionmaker bound to Postgres engine
-        mongo_db,             # pymongo.database.Database
-        redis_client=None,    # redis.Redis | None  (None until Phase 2)
-        neo4j_driver=None,    # neo4j.Driver | None (None until Phase 3)
+        pg_session_factory: sessionmaker,
+        mongo_db: MongoDatabase,
+        redis_client: redis_lib.Redis | None = None,
+        neo4j_driver: neo4j.Driver | None = None,
     ) -> None:
         self._pg_session_factory = pg_session_factory
         self._mongo_db = mongo_db
