@@ -20,14 +20,6 @@ Your job over this project is to build that data layer, phase by phase, as the b
 
 ---
 
-## How the Project Works
-
-The API is structured around a single class called `DBAccess`. Every web request ends up calling one method on this class. You implement those methods. The API calls them. The tests verify them.
-
-You will not touch the web layer. You will not write HTTP handlers, parse request bodies, or format JSON responses. That's all done for you. You write Python functions that read from and write to databases.
-
----
-
 ## The Story
 
 ShopFlow is preparing to launch. The engineering team has three months before the first customers arrive, and a simple mandate: **make it work, make it correct, then make it fast**.
@@ -42,3 +34,144 @@ The questions you will face are not "how do I write this query." The questions a
 - Is this storage choice still correct at that scale, or does it break?
 
 Work through each phase in order. The problems in Phase 2 only exist because the system from Phase 1 is running.
+
+---
+
+## How the Project Works
+
+The API is structured around a single class called `DBAccess`. Every web request ends up calling one method on this class. You implement those methods. The API calls them. The tests verify them.
+
+You will not touch the web layer. You will not write HTTP handlers, parse request bodies, or format JSON responses. That's all done for you. You write Python functions that read from and write to databases.
+
+---
+
+## Project Structure
+
+```
+src/ecommerce_pipeline/
+    postgres_models.py     ← YOU MODIFY (ORM models)
+    db_access.py           ← YOU MODIFY (data access methods)
+    reset.py               ← PROVIDED (don't touch)
+    db.py                  ← PROVIDED (database connections)
+    api/                   ← PROVIDED (web routes)
+    models/                ← PROVIDED (request/response models)
+scripts/
+    migrate.py             ← YOU MODIFY (create tables, indexes, constraints)
+    seed.py                ← YOU MODIFY (load data into databases)
+    setup.py               ← PROVIDED (convenience: reset + migrate + seed)
+seed_data/                 ← PROVIDED (JSON data files to load)
+tests/                     ← PROVIDED (don't touch)
+```
+
+You modify exactly four files across all phases:
+1. `postgres_models.py` — your ORM model definitions
+2. `db_access.py` — the DBAccess methods
+3. `scripts/migrate.py` — creates your database structures
+4. `scripts/seed.py` — loads data into your databases
+
+---
+
+## Workflow
+
+Every phase follows the same development loop:
+
+1. **Design** — Read the method signatures and acceptance criteria. Decide what data goes where.
+2. **Migrate** — Implement your migration logic, then run: `uv run python -m scripts.migrate`
+3. **Seed** — Load the seed data into your databases: `uv run python -m scripts.seed`
+4. **Implement** — Write the DBAccess methods one at a time.
+5. **Test** — Run the relevant tests: `uv run pytest tests/test_phase1.py -v`
+6. **Try the API** — Start the server and test interactively: `uv run uvicorn ecommerce_pipeline.api.app:app --reload`, then open `http://localhost:8000/docs`
+
+---
+
+## CLI Commands
+
+| Command | What it does |
+|---------|-------------|
+| `uv run python -m scripts.migrate` | Drop everything and recreate database structures from your code |
+| `uv run python -m scripts.seed` | Load seed data (requires migrate first) |
+| `uv run python -m scripts.setup` | All-in-one: reset + migrate + seed |
+| `uv run pytest tests/test_phase1.py -v` | Run Phase 1 tests |
+| `uv run pytest tests/test_phase2.py -v` | Run Phase 2 tests |
+| `uv run pytest tests/test_phase3.py -v` | Run Phase 3 tests |
+| `uv run pytest tests/ -v` | Run all tests |
+
+---
+
+## How to Reset
+
+| Situation | Command |
+|-----------|---------|
+| Changed your ORM models and need to recreate tables | `uv run python -m scripts.migrate` |
+| Want a fully clean database with fresh data | `uv run python -m scripts.setup` |
+| Something is deeply broken | `docker compose down -v && docker compose up -d` |
+
+---
+
+## The API
+
+The web API is fully built and running. Start it and open `/docs` in your browser to see every endpoint, what it expects, and what it returns. You can test any endpoint interactively from that page.
+
+Every endpoint returns `501 Not Implemented` until you implement the corresponding DBAccess method.
+
+---
+
+## Response Shapes
+
+The API layer expects your DBAccess methods to return plain Python dicts. Here are the shapes the API validates against:
+
+### Product
+```python
+{
+    "id": int,
+    "name": str,
+    "price": float,
+    "stock_quantity": int,
+    "category": str,        # "electronics" | "clothing" | "books" | "food" | "home"
+    "description": str,
+    "category_fields": dict  # shape varies by category — see Phase 1 lesson
+}
+```
+
+### Order (returned by create_order)
+```python
+{
+    "order_id": int,
+    "customer_id": int,
+    "status": "completed",
+    "total_amount": float,
+    "created_at": str,       # ISO 8601
+    "items": [
+        {"product_id": int, "product_name": str, "quantity": int, "unit_price": float}
+    ]
+}
+```
+
+### Order Snapshot (returned by get_order, get_order_history)
+```python
+{
+    "order_id": int,
+    "customer": {"id": int, "name": str, "email": str},
+    "items": [
+        {"product_id": int, "product_name": str, "quantity": int, "unit_price": float}
+    ],
+    "total_amount": float,
+    "status": str,
+    "created_at": str
+}
+```
+
+### Revenue by Category
+```python
+[{"category": str, "total_revenue": float}, ...]  # sorted by total_revenue desc
+```
+
+### Recommendation
+```python
+[{"product_id": int, "name": str, "score": int}, ...]  # sorted by score desc
+```
+
+### Recently Viewed
+```python
+[int, ...]  # product IDs, most recently viewed first, max 10
+```

@@ -19,9 +19,9 @@ The data to build this already exists. Every order ever placed is in the system.
 
 ---
 
-## Discussion: How Do You Model "Also Bought"?
+## Design Considerations: How Do You Model "Also Bought"?
 
-You have order history. You need to find products that frequently appear together in orders. Think about how you'd approach this.
+You have order history. You need to find products that frequently appear together in orders. Consider the following before you start coding.
 
 **Start with the data you have:**
 - An order contains a list of product IDs
@@ -51,35 +51,13 @@ You have order history. You need to find products that frequently appear togethe
 
 ## What You Need to Build
 
-Two methods: one builds the graph from historical order data, one traverses it to produce recommendations.
+You will implement recommendation queries, update your migration and seed scripts for Neo4j, and extend `create_order` to maintain the co-purchase graph.
 
 ---
 
 ## Definition of Done
 
-### 1. `seed_recommendation_graph`
-
-**What it enables:** Building the co-purchase relationship graph from historical order data.
-
-For every order, every unique pair of products in that order forms a relationship: "these were bought together." If the same pair appears in multiple orders, the strength of that relationship increases by one for each additional order. When `create_order` is called in Phase 1+, it also updates the graph for the new order.
-
-This method is also called by the seed script after historical orders are loaded.
-
-**Signature:**
-```{code-cell} python
-def seed_recommendation_graph(self, orders: list[dict]) -> None:
-    # orders: [{"order_id": int, "product_ids": [int, ...]}, ...]
-```
-
-**Accepted when:**
-- After seeding, a product that appeared in multiple orders alongside another product has a stronger relationship to it than a product that only co-appeared once
-- Products not found in the catalog are silently skipped — no error
-- Calling this again with the same orders increments relationship strengths further (it is additive, not idempotent)
-- Product nodes store the product name as it was at seeding time
-
----
-
-### 2. `get_recommendations`
+### 1. `get_recommendations`
 
 **What it enables:** Returning a ranked list of products to recommend alongside a given product.
 
@@ -99,12 +77,74 @@ def get_recommendations(self, product_id: int, limit: int = 5) -> list[dict]:
 
 ---
 
+### 2. Migration update
+
+Update `scripts/migrate.py` to add a Neo4j uniqueness constraint on `Product.id`.
+
+---
+
+### 3. Seed update
+
+Update `scripts/seed.py` to load `seed_data/historical_orders.json`, generate all product pair combinations per order, and build `BOUGHT_TOGETHER` edges in Neo4j.
+
+---
+
+### 4. `create_order` update
+
+Update `create_order` to MERGE co-purchase edges in Neo4j for every pair of products in the order, incrementing the weight.
+
+---
+
+## Conventions
+
+Tests depend on these exact Neo4j labels and types:
+
+**Node label:** `Product`
+| Property | Type |
+|----------|------|
+| `id` | int |
+| `name` | str |
+
+**Relationship type:** `BOUGHT_TOGETHER` (undirected)
+| Property | Type |
+|----------|------|
+| `weight` | int |
+
+Use `MERGE` without direction arrows for undirected relationships.
+
+---
+
+## Step by Step
+
+### Step 1: Update your migration
+Add a Neo4j uniqueness constraint:
+```cypher
+CREATE CONSTRAINT product_id IF NOT EXISTS FOR (p:Product) REQUIRE p.id IS UNIQUE
+```
+Run: `uv run python -m scripts.migrate`
+
+### Step 2: Update your seed
+Load `seed_data/historical_orders.json`. For each order, generate all unique product pairs using `itertools.combinations`. For each pair, MERGE Product nodes and MERGE a BOUGHT_TOGETHER edge, incrementing the weight.
+Run: `uv run python -m scripts.setup`
+
+### Step 3: Implement get_recommendations
+    uv run pytest tests/test_phase3.py::test_get_recommendations_shape -v
+
+### Step 4: Update create_order for Neo4j
+After the Postgres transaction and MongoDB snapshot, MERGE co-purchase edges for every pair of products in the new order.
+    uv run pytest tests/test_phase3.py::test_create_order_updates_graph -v
+
+### Step 5: Run all Phase 3 tests
+    uv run pytest tests/test_phase3.py -v
+
+---
+
 ## Before You Move On
 
 With the graph in place, explore it:
 
 - Open the graph database browser and visualize the product network. Which products are the most connected?
 - Call `GET /products/{id}/recommendations` for a product that appears in many orders. Then call it for a product that appears in only one order. Compare the results.
-- Try to write the equivalent query in SQL (hint: you need a self-join on `order_items`, grouped by product pair, sorted by count). Compare the Cypher and SQL versions.
+- Try to write the equivalent query in SQL (hint: you need a self-join on order line items, grouped by product pair, sorted by count). Compare the Cypher and SQL versions.
 
 Consider: what would it take to extend recommendations to two hops — "customers who bought X also bought Y, which is also bought alongside Z"? How does that change the Cypher query? How does it change the SQL?

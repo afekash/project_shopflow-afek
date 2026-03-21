@@ -18,11 +18,11 @@ The launch requirements are straightforward:
 3. The business can see which product categories are generating revenue
 4. Customer service can look up any order, past or present
 
-**Before you write a line of code, discuss the following with the group.**
+**Consider the following before you start coding.**
 
 ---
 
-## Discussion: Where Does the Data Live?
+## Design Considerations: Where Does the Data Live?
 
 You need to store two fundamentally different things:
 
@@ -40,7 +40,7 @@ Consider:
 
 ## What You Need to Build
 
-After the discussion, you will implement the following capabilities. Each maps to a specific method in `db_access.py` — open that file and read the signature and docstring for each before implementing.
+You will implement the following capabilities. Each maps to a specific method in `db_access.py` — open that file and read the signature and docstring for each before implementing.
 
 ---
 
@@ -179,12 +179,72 @@ def revenue_by_category(self) -> list[dict]:
 
 ---
 
+## Conventions
+
+Tests depend on these exact names:
+
+**MongoDB collections:**
+- `product_catalog` — stores product documents
+- `order_snapshots` — stores order snapshot documents
+
+**PostgreSQL:** You design your own schema. No table names or column names are prescribed.
+The method signatures and acceptance criteria define what your code must do — you decide how to structure the tables that support it.
+
+---
+
+## Step by Step
+
+### Step 1: Design your database schemas
+Read through all the method signatures and acceptance criteria above.
+From those, determine what data needs to live in PostgreSQL and what in MongoDB.
+Open `postgres_models.py` and define your ORM classes.
+
+### Step 2: Write your migration
+Open `scripts/migrate.py`. Implement the `migrate()` function.
+For Postgres: use `Base.metadata.create_all(engine)` to create tables from your ORM models.
+For MongoDB: create any indexes your queries will need.
+Run: `uv run python -m scripts.migrate`
+Verify: connect to Postgres and confirm your tables exist.
+
+### Step 3: Write your seed
+Open `scripts/seed.py`. Implement the `seed()` function.
+Load `seed_data/products.json` and `seed_data/customers.json`.
+Insert the data into your databases using the schemas you designed.
+Run: `uv run python -m scripts.seed`
+Verify: start the API and try `GET /products` — you should see your seeded products.
+
+### Step 4: Implement and test one method at a time
+Start with `get_product` (reads a single product from MongoDB):
+    uv run pytest tests/test_phase1.py::test_get_product_found -v
+
+Then `search_products`:
+    uv run pytest tests/test_phase1.py::test_search_products_by_category -v
+
+Then `save_order_snapshot`, `get_order`, `get_order_history`:
+    uv run pytest tests/test_phase1.py::test_save_order_snapshot -v
+
+Then `create_order` (ACID transaction — reads from Postgres, writes snapshot to MongoDB):
+    uv run pytest tests/test_phase1.py::test_create_order_success -v
+
+Finally `revenue_by_category`:
+    uv run pytest tests/test_phase1.py::test_revenue_by_category -v
+
+### Step 5: Run all Phase 1 tests
+    uv run pytest tests/test_phase1.py -v
+
+### Step 6: Try it in the browser
+    uv run python -m scripts.setup
+    uv run uvicorn ecommerce_pipeline.api.app:app --reload
+    Open http://localhost:8000/docs
+
+---
+
 ## Before You Move On
 
-Once all seven methods pass their tests, try the following:
+Once all seven methods pass their tests, verify the following:
 
 - Place an order for a product with 1 unit in stock. Then try to place the same order again. What happens?
-- Search products by category and by name. Look at your relational schema and think about what the equivalent query would require in SQL.
+- Search products by category and by name. Think about what the equivalent query would require in raw SQL.
 - Pull the revenue report. Add another order and pull it again.
 
 When you have internalized why each storage choice exists, move to Phase 2.

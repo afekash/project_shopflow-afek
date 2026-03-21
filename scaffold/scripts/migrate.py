@@ -1,47 +1,37 @@
 """
-Seed script — loads data into all databases.
+Database migration script.
+
+Drops and recreates all database structures, then runs your migration logic.
 
 Usage:
-    uv run python -m scripts.seed
+    uv run python -m scripts.migrate
 
-Prerequisites:
-    Run scripts.migrate first to create database structures.
-
-What to implement in seed():
-    Phase 1: Load products.json + customers.json into Postgres and MongoDB
-    Phase 2: Initialize Redis inventory counters from Postgres product stock
-    Phase 3: Build Neo4j co-purchase graph from historical_orders.json
-
-Seed data files are in the seed_data/ directory.
+What to implement in migrate():
+    Phase 1: Create Postgres tables (Base.metadata.create_all) + MongoDB indexes
+    Phase 2: No structural migration needed for Redis
+    Phase 3: Neo4j uniqueness constraints
 """
 
 import os
-from pathlib import Path
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
-SEED_DIR = Path(__file__).parent.parent / "seed_data"
 
+def migrate(engine, mongo_db, redis_client=None, neo4j_driver=None):
+    """Create all database tables, indexes, and constraints.
 
-def seed(engine, mongo_db, redis_client=None, neo4j_driver=None):
-    """Load seed data into all databases.
-
-    Add your seeding logic here incrementally as you progress through phases.
+    This function is called after reset_all() has wiped everything.
+    Add your creation logic here incrementally as you progress through phases.
 
     Args:
         engine: SQLAlchemy engine connected to Postgres
         mongo_db: pymongo Database instance
         redis_client: redis.Redis instance or None (Phase 2+)
         neo4j_driver: neo4j.Driver instance or None (Phase 3)
-
-    Tip: Use json.load() to read the files in seed_data/:
-        products = json.load(open(SEED_DIR / "products.json"))
-        customers = json.load(open(SEED_DIR / "customers.json"))
-        historical_orders = json.load(open(SEED_DIR / "historical_orders.json"))
     """
-    pass  # TODO: Phase 1 — load products and customers into Postgres + MongoDB
+    pass  # TODO: Phase 1 — create Postgres tables and MongoDB indexes
 
 
 # ---------------------------------------------------------------------------
@@ -91,14 +81,20 @@ def _neo4j_driver():
 def main():
     from sqlalchemy import create_engine
 
+    from ecommerce_pipeline.reset import reset_all
+
     engine = create_engine(_pg_url(), echo=False)
     mongo_db = _mongo_db()
     redis_client = _redis_client()
     neo4j_driver = _neo4j_driver()
 
-    print("Seeding databases...")
-    seed(engine, mongo_db, redis_client, neo4j_driver)
-    print("Seeding complete.")
+    print("Resetting all databases...")
+    reset_all(engine, mongo_db, redis_client, neo4j_driver)
+
+    print("Running migration...")
+    migrate(engine, mongo_db, redis_client, neo4j_driver)
+
+    print("Migration complete.")
 
     if neo4j_driver:
         neo4j_driver.close()

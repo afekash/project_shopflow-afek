@@ -1,12 +1,14 @@
 """
 DBAccess — the data access layer.
 
-This is the only file you need to implement. The web API is already wired up;
+This is one of the files you implement. The web API is already wired up;
 every route calls one method on this class. Your job is to replace each
 `raise NotImplementedError(...)` with a real implementation.
 
-Work through the phases in order. Read the corresponding lesson file in
-materials/project/ before starting each phase.
+Work through the phases in order. Read the corresponding lesson file before
+starting each phase.
+
+You also implement scripts/migrate.py and scripts/seed.py alongside this file.
 """
 
 import json
@@ -128,14 +130,16 @@ class DBAccess:
         raise NotImplementedError("Phase 1: implement revenue_by_category")
 
     # ── Phase 2 ───────────────────────────────────────────────────────────────
-
-    def init_inventory_counters(self) -> None:
-        """Seed inventory counters from current stock quantities.
-
-        For each product, write its current stock_quantity to the counter
-        store. Called at startup and after seeding products.
-        """
-        raise NotImplementedError("Phase 2: implement init_inventory_counters")
+    #
+    # In this phase you also need to:
+    #   - Update create_order to DECR Redis inventory counters after the
+    #     Postgres transaction succeeds.
+    #   - Optionally, add a fast pre-check: before starting the Postgres
+    #     transaction, check the Redis counter. If it shows insufficient
+    #     stock, fail fast without hitting Postgres.
+    #   - Update scripts/seed.py to initialize inventory counters in Redis.
+    #   - Add cache-aside logic to get_product (check Redis first, populate
+    #     on miss with a 300-second TTL).
 
     def invalidate_product_cache(self, product_id: int) -> None:
         """Remove a product's cached entry.
@@ -162,19 +166,13 @@ class DBAccess:
         raise NotImplementedError("Phase 2: implement get_recently_viewed")
 
     # ── Phase 3 ───────────────────────────────────────────────────────────────
-
-    def seed_recommendation_graph(self, orders: list[dict]) -> None:
-        """Build the co-purchase recommendation graph from order history.
-
-        orders: [{"order_id": int, "product_ids": [int, ...]}, ...]
-
-        For each unique pair of products in an order, creates or strengthens
-        a co-purchase relationship between them. The strength increases by one
-        for every order in which the pair appears together.
-
-        Products not found in the catalog are silently skipped.
-        """
-        raise NotImplementedError("Phase 3: implement seed_recommendation_graph")
+    #
+    # In this phase you also need to:
+    #   - Update create_order to MERGE co-purchase edges in Neo4j for every
+    #     pair of products in the order, incrementing the edge weight.
+    #   - Update scripts/migrate.py to create Neo4j constraints.
+    #   - Update scripts/seed.py to build the co-purchase graph from
+    #     seed_data/historical_orders.json.
 
     def get_recommendations(self, product_id: int, limit: int = 5) -> list[dict]:
         """Return product recommendations based on co-purchase patterns.

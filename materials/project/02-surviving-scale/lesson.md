@@ -21,11 +21,9 @@ The product detail page is the most visited page on the site. Every page load hi
 
 ---
 
-**Problem 2: Inventory is going negative.**
+**Problem 2: Inventory checks are slow.**
 
-In the first week after launch, several products sold more units than actually existed. The order service updates stock in the transactional database, but between the read and the write, another order can slip through. Under low load this never happened. Under real traffic, it happens constantly.
-
-The team wants to track inventory in a way that guarantees an update either happens or it doesn't — no race conditions, no intermediate reads.
+Every product page and every add-to-cart hits the transactional database to read stock. Under load, these reads compete with order writes for database connections. The team wants a fast-path counter that can answer "is this product in stock?" without touching Postgres.
 
 ---
 
@@ -37,9 +35,9 @@ Marketing wants to surface recently viewed products on the homepage and in email
 
 ---
 
-## Discussion: Where Does This Data Belong?
+## Design Considerations: Where Does This Data Belong?
 
-Before you look at any code, discuss the following:
+Consider the following before you start coding:
 
 **On the product cache:**
 - What does it mean for a cache to be "correct"? When does stale data become a problem?
@@ -61,31 +59,17 @@ Before you look at any code, discuss the following:
 
 ## What You Need to Build
 
+Update `create_order` to DECR the Redis inventory counter for each ordered product after the Postgres transaction succeeds. As an optimization, you can also check the Redis counter before starting the Postgres transaction — if Redis says insufficient stock, fail fast without hitting Postgres. The Postgres transaction remains the authoritative check.
+
+Update `scripts/seed.py` to read all product stock quantities from Postgres and write them to Redis as inventory counters. No migration changes needed — Redis has no schema.
+
 Four methods. Two are additions to existing behavior; two are new capabilities.
 
 ---
 
 ## Definition of Done
 
-### 1. `init_inventory_counters`
-
-**What it enables:** Seeding a fast inventory counter store from the current state of the transactional database.
-
-This is called at startup and after seeding products. It reads the current stock quantities from Postgres and writes them into a fast counter store so that inventory checks and decrements can happen there instead.
-
-**Signature:**
-```{code-cell} python
-def init_inventory_counters(self) -> None:
-```
-
-**Accepted when:**
-- After calling this method, a fast-path counter exists for every product in the transactional store
-- The counter value matches the `stock_quantity` in Postgres at the time of the call
-- Calling it again overwrites existing counters (idempotent)
-
----
-
-### 2. `get_product` (updated)
+### 1. `get_product` (updated)
 
 **What it enables:** Serving product detail pages without hitting the primary store on every request.
 
@@ -107,7 +91,7 @@ def get_product(self, product_id: int) -> dict | None:
 
 ---
 
-### 3. `invalidate_product_cache`
+### 2. `invalidate_product_cache`
 
 **What it enables:** Keeping the cache consistent when product data changes.
 
@@ -124,7 +108,7 @@ def invalidate_product_cache(self, product_id: int) -> None:
 
 ---
 
-### 4. `record_product_view`
+### 3. `record_product_view`
 
 **What it enables:** Maintaining a per-customer history of recently viewed products.
 
@@ -142,7 +126,7 @@ def record_product_view(self, customer_id: int, product_id: int) -> None:
 
 ---
 
-### 5. `get_recently_viewed`
+### 4. `get_recently_viewed`
 
 **What it enables:** Reading a customer's recent product history.
 
@@ -158,9 +142,50 @@ def get_recently_viewed(self, customer_id: int) -> list[int]:
 
 ---
 
+## Conventions
+
+Tests depend on these exact Redis key patterns:
+
+| Key Pattern | Type | Value | TTL |
+|-------------|------|-------|-----|
+| `product:{product_id}` | String | JSON-serialized product dict | 300 seconds |
+| `inventory:{product_id}` | String | Integer stock count as string | None |
+| `recently_viewed:{customer_id}` | List | Product ID strings (head = most recent) | None |
+
+Redis client must be created with `decode_responses=True`.
+
+---
+
+## Step by Step
+
+### Step 1: Update your seed
+Open `scripts/seed.py`. After your Phase 1 seeding, add logic to read all products from Postgres and set `inventory:{product_id}` keys in Redis.
+Run: `uv run python -m scripts.setup`
+
+### Step 2: Add cache-aside to get_product
+Update `get_product` in `db_access.py`:
+1. Check Redis key `product:{product_id}` — if present, deserialize and return
+2. On miss: fetch from MongoDB, serialize to JSON, SET in Redis with 300-second TTL, return
+Run: `uv run pytest tests/test_phase2.py::test_cache_populated_on_first_read -v`
+
+### Step 3: Implement invalidate_product_cache
+    uv run pytest tests/test_phase2.py::test_invalidate_clears_cache -v
+
+### Step 4: Implement record_product_view and get_recently_viewed
+    uv run pytest tests/test_phase2.py::test_record_and_get_recently_viewed -v
+
+### Step 5: Update create_order for Redis
+Add DECR logic for inventory counters after the Postgres transaction succeeds.
+    uv run pytest tests/test_phase2.py::test_create_order_decrements_counter -v
+
+### Step 6: Run all Phase 2 tests
+    uv run pytest tests/test_phase2.py -v
+
+---
+
 ## Before You Move On
 
-With Phase 2 in place, try the following:
+With Phase 2 in place, verify the following:
 
 - Call `GET /products/{id}` twice for the same product. Check the logs to see if the second call hit the primary store.
 - Call `invalidate_product_cache` for a product, then `GET /products/{id}`. Confirm it fetches from the primary store again.

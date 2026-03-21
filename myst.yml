@@ -245,10 +245,9 @@ project:
             - file: materials/docker/05-exercises/01-containerize-fastapi-app.md
             - file: materials/docker/05-exercises/02-build-a-distributed-system.md
 
-    - file: materials/project/README.md
+    - title: Capstone Project
       children:
         - file: materials/project/00-introduction.md
-        - file: materials/project/interface-spec.md
         - file: materials/project/01-taking-orders/lesson.md
         - file: materials/project/02-surviving-scale/lesson.md
         - file: materials/project/03-personalization/lesson.md
