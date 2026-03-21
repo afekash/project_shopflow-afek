@@ -139,62 +139,11 @@ Every endpoint returns `501 Not Implemented` until you implement the correspondi
 
 ---
 
-## Response Shapes
+## Data Models
 
-The API layer expects your DBAccess methods to return plain Python dicts. Here are the shapes the API validates against:
+The data shapes your DBAccess methods receive and return are defined as Pydantic models in two files:
 
-### Product
-```python
-{
-    "id": int,
-    "name": str,
-    "price": float,
-    "stock_quantity": int,
-    "category": str,        # "electronics" | "clothing" | "books" | "food" | "home"
-    "description": str,
-    "category_fields": dict  # shape varies by category — see Phase 1 lesson
-}
-```
+- **`models/requests.py`** — input models (e.g., `OrderItemRequest` with `product_id` and `quantity`)
+- **`models/responses.py`** — output models (e.g., `ProductResponse`, `OrderResponse`, `OrderSnapshotResponse`)
 
-### Order (returned by create_order)
-```python
-{
-    "order_id": int,
-    "customer_id": int,
-    "status": "completed",
-    "total_amount": float,
-    "created_at": str,       # ISO 8601
-    "items": [
-        {"product_id": int, "product_name": str, "quantity": int, "unit_price": float}
-    ]
-}
-```
-
-### Order Snapshot (returned by get_order, get_order_history)
-```python
-{
-    "order_id": int,
-    "customer": {"id": int, "name": str, "email": str},
-    "items": [
-        {"product_id": int, "product_name": str, "quantity": int, "unit_price": float}
-    ],
-    "total_amount": float,
-    "status": str,
-    "created_at": str
-}
-```
-
-### Revenue by Category
-```python
-[{"category": str, "total_revenue": float}, ...]  # sorted by total_revenue desc
-```
-
-### Recommendation
-```python
-[{"product_id": int, "name": str, "score": int}, ...]  # sorted by score desc
-```
-
-### Recently Viewed
-```python
-[int, ...]  # product IDs, most recently viewed first, max 10
-```
+Open these files to see the exact fields and types. Your DBAccess methods accept and return these models directly — the method signatures tell you everything you need.

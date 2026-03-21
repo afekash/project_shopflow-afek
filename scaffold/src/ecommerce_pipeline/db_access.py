@@ -24,6 +24,17 @@ if TYPE_CHECKING:
     from pymongo.database import Database as MongoDatabase
     from sqlalchemy.orm import sessionmaker
 
+    from ecommerce_pipeline.models.requests import OrderItemRequest
+    from ecommerce_pipeline.models.responses import (
+        CategoryRevenueResponse,
+        OrderCustomerEmbed,
+        OrderItemResponse,
+        OrderResponse,
+        OrderSnapshotResponse,
+        ProductResponse,
+        RecommendationResponse,
+    )
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,14 +53,11 @@ class DBAccess:
 
     # ── Phase 1 ───────────────────────────────────────────────────────────────
 
-    def create_order(self, customer_id: int, items: list[dict]) -> dict:
+    def create_order(self, customer_id: int, items: list[OrderItemRequest]) -> OrderResponse:
         """Place an order atomically.
 
-        items: [{"product_id": int, "quantity": int}, ...]
-
-        Returns a dict with order_id, customer_id, status, total_amount,
-        created_at (ISO 8601 string), and a list of items including product_name
-        and unit_price.
+        See OrderItemRequest in models/requests.py for the input shape.
+        See OrderResponse in models/responses.py for the return shape.
 
         Raises ValueError if any product has insufficient stock. When that
         happens, no data is modified in any database.
@@ -60,18 +68,11 @@ class DBAccess:
         """
         raise NotImplementedError("Phase 1: implement create_order")
 
-    def get_product(self, product_id: int) -> dict | None:
+    def get_product(self, product_id: int) -> ProductResponse | None:
         """Fetch a product by its integer ID.
 
-        Returns a dict with id, name, price, stock_quantity, category,
-        description, and category_fields. Returns None if not found.
-
-        The category_fields shape varies by category:
-          electronics: {cpu, ram_gb, storage_gb, screen_inches}
-          clothing:    {material, sizes, colors}
-          books:       {isbn, author, page_count, genre}
-          food:        {weight_g, organic, allergens}
-          home:        {dimensions, material, assembly_required}
+        See ProductResponse in models/responses.py for the return shape.
+        Returns None if not found.
         """
         raise NotImplementedError("Phase 1: implement get_product")
 
@@ -79,29 +80,28 @@ class DBAccess:
         self,
         category: str | None = None,
         q: str | None = None,
-    ) -> list[dict]:
+    ) -> list[ProductResponse]:
         """Search the product catalog with optional filters.
 
         category: exact match on the category field
         q: case-insensitive substring match on the product name
         Both filters are ANDed together. Returns all products if both are None.
-        Returns a list of product dicts (same shape as get_product).
         """
         raise NotImplementedError("Phase 1: implement search_products")
 
     def save_order_snapshot(
         self,
         order_id: int,
-        customer: dict,
-        items: list[dict],
+        customer: OrderCustomerEmbed,
+        items: list[OrderItemResponse],
         total_amount: float,
         status: str,
         created_at: str,
     ) -> str:
         """Save a denormalized order snapshot for fast read access.
 
-        customer: {"id": int, "name": str, "email": str}
-        items: [{"product_id": int, "product_name": str, "quantity": int, "unit_price": float}]
+        See OrderCustomerEmbed and OrderItemResponse in models/responses.py
+        for the input shapes.
 
         Embeds all customer and product details as they existed at the time
         of the order, so the snapshot remains accurate even if prices or
@@ -114,27 +114,25 @@ class DBAccess:
         """
         raise NotImplementedError("Phase 1: implement save_order_snapshot")
 
-    def get_order(self, order_id: int) -> dict | None:
+    def get_order(self, order_id: int) -> OrderSnapshotResponse | None:
         """Fetch a single order snapshot by order_id.
 
-        Returns the snapshot dict (order_id, customer embed, items list,
-        total_amount, status, created_at) or None if not found.
+        See OrderSnapshotResponse in models/responses.py for the return shape.
+        Returns None if not found.
         """
         raise NotImplementedError("Phase 1: implement get_order")
 
-    def get_order_history(self, customer_id: int) -> list[dict]:
-        """Fetch all order snapshots for a customer.
+    def get_order_history(self, customer_id: int) -> list[OrderSnapshotResponse]:
+        """Fetch all order snapshots for a customer, sorted by created_at descending.
 
-        Returns a list of snapshot dicts sorted by created_at descending.
         Returns an empty list if the customer has no orders.
         """
         raise NotImplementedError("Phase 1: implement get_order_history")
 
-    def revenue_by_category(self) -> list[dict]:
-        """Compute total revenue per product category.
+    def revenue_by_category(self) -> list[CategoryRevenueResponse]:
+        """Compute total revenue per product category, sorted by total_revenue descending.
 
-        Returns [{"category": str, "total_revenue": float}, ...] sorted by
-        total_revenue descending.
+        See CategoryRevenueResponse in models/responses.py for the return shape.
         """
         raise NotImplementedError("Phase 1: implement revenue_by_category")
 
@@ -183,12 +181,10 @@ class DBAccess:
     #   - Update scripts/seed.py to build the co-purchase graph from
     #     seed_data/historical_orders.json.
 
-    def get_recommendations(self, product_id: int, limit: int = 5) -> list[dict]:
+    def get_recommendations(self, product_id: int, limit: int = 5) -> list[RecommendationResponse]:
         """Return product recommendations based on co-purchase patterns.
 
-        Returns [{"product_id": int, "name": str, "score": int}, ...]
-        sorted by score (co-purchase strength) descending.
-
-        Returns an empty list if the product has no co-purchase relationships.
+        See RecommendationResponse in models/responses.py for the return shape.
+        Sorted by score descending. Returns an empty list if no co-purchase relationships exist.
         """
         raise NotImplementedError("Phase 3: implement get_recommendations")

@@ -11,6 +11,8 @@ Tests cover:
 
 import pytest
 
+from ecommerce_pipeline.models.requests import OrderItemRequest
+from ecommerce_pipeline.models.responses import ProductResponse
 from tests.conftest import insert_product_mongo
 
 
@@ -40,7 +42,7 @@ def test_cache_serves_stale_data(db_phase2, mongo_db, redis_client):
 
     # Should still return the cached (old) name
     product = db_phase2.get_product(1)
-    assert product["name"] == "Original Name"
+    assert product.name == "Original Name"
 
 
 def test_invalidate_clears_cache(db_phase2, mongo_db, redis_client):
@@ -58,7 +60,7 @@ def test_invalidate_clears_cache(db_phase2, mongo_db, redis_client):
 
     # Should now return the updated name
     product = db_phase2.get_product(1)
-    assert product["name"] == "Updated Name"
+    assert product.name == "Updated Name"
 
 
 def test_cache_ttl(db_phase2, mongo_db, redis_client):
@@ -136,7 +138,9 @@ def test_create_order_decrements_counter(db_phase2, redis_client, seeded):
     """create_order should decrement the Redis inventory counter."""
     initial = int(redis_client.get("inventory:1"))
 
-    db_phase2.create_order(customer_id=1, items=[{"product_id": 1, "quantity": 2}])
+    db_phase2.create_order(
+        customer_id=1, items=[OrderItemRequest(product_id=1, quantity=2)]
+    )
 
     after = int(redis_client.get("inventory:1"))
     assert after == initial - 2
@@ -147,7 +151,9 @@ def test_failed_order_no_counter_change(db_phase2, redis_client, seeded):
     initial = int(redis_client.get("inventory:1"))
 
     with pytest.raises(ValueError):
-        db_phase2.create_order(customer_id=1, items=[{"product_id": 1, "quantity": 999999}])
+        db_phase2.create_order(
+            customer_id=1, items=[OrderItemRequest(product_id=1, quantity=999999)]
+        )
 
     after = int(redis_client.get("inventory:1"))
     assert after == initial
