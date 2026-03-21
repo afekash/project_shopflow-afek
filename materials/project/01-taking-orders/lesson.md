@@ -56,15 +56,16 @@ When an order completes, a complete snapshot of the order is saved — customer 
 
 **Signature:**
 ```{code-cell} python
-def create_order(self, customer_id: int, items: list[dict]) -> dict:
-    # items: [{"product_id": int, "quantity": int}, ...]
+def create_order(self, customer_id: int, items: list[OrderItemRequest]) -> OrderResponse:
 ```
+
+See `models/requests.py` for `OrderItemRequest` and `models/responses.py` for `OrderResponse`.
 
 **Accepted when:**
 - An order with valid stock reduces `stock_quantity` for every product involved
 - Two concurrent orders for the last unit of a product result in exactly one success
 - An order for a product with insufficient stock raises `ValueError` and no data is modified
-- A successful order returns a dict with `order_id`, `customer_id`, `status`, `total_amount`, `created_at`, and an `items` list containing `product_id`, `product_name`, `quantity`, and `unit_price`
+- A successful order returns an `OrderResponse` (see `models/responses.py` for the full shape)
 - A snapshot of the order is persisted and retrievable via `get_order` after creation
 
 ---
@@ -77,11 +78,13 @@ The response must include all category-specific fields — a single call must re
 
 **Signature:**
 ```{code-cell} python
-def get_product(self, product_id: int) -> dict | None:
+def get_product(self, product_id: int) -> ProductResponse | None:
 ```
 
+See `models/responses.py` for `ProductResponse`.
+
 **Accepted when:**
-- Returns a dict with `id`, `name`, `price`, `stock_quantity`, `category`, `description`, and `category_fields`
+- Returns a `ProductResponse` with the product's fields and `category_fields`
 - `category_fields` contains the correct category-specific attributes (e.g., `cpu`/`ram_gb` for electronics, `sizes`/`colors` for clothing)
 - Returns `None` if the product does not exist
 
@@ -95,7 +98,7 @@ Filtering can be by category, by a text match on product name, or both. Results 
 
 **Signature:**
 ```{code-cell} python
-def search_products(self, category: str | None = None, q: str | None = None) -> list[dict]:
+def search_products(self, category: str | None = None, q: str | None = None) -> list[ProductResponse]:
 ```
 
 **Accepted when:**
@@ -103,7 +106,7 @@ def search_products(self, category: str | None = None, q: str | None = None) -> 
 - Filters by exact `category` when provided
 - Filters by case-insensitive substring match on product name when `q` is provided
 - Both filters can be applied together (AND semantics)
-- Each result has the same dict shape as `get_product`
+- Each result is a `ProductResponse` (same shape as `get_product`)
 
 ---
 
@@ -118,13 +121,15 @@ This method is called internally by `create_order` — it is not exposed directl
 def save_order_snapshot(
     self,
     order_id: int,
-    customer: dict,   # {"id": int, "name": str, "email": str}
-    items: list[dict],  # [{"product_id": int, "product_name": str, "quantity": int, "unit_price": float}]
+    customer: OrderCustomerEmbed,
+    items: list[OrderItemResponse],
     total_amount: float,
     status: str,
     created_at: str,
 ) -> str:
 ```
+
+See `models/responses.py` for `OrderCustomerEmbed` and `OrderItemResponse`.
 
 **Accepted when:**
 - Persists the snapshot so that `get_order(order_id)` returns the correct data
@@ -138,11 +143,13 @@ def save_order_snapshot(
 
 **Signature:**
 ```{code-cell} python
-def get_order(self, order_id: int) -> dict | None:
+def get_order(self, order_id: int) -> OrderSnapshotResponse | None:
 ```
 
+See `models/responses.py` for `OrderSnapshotResponse`.
+
 **Accepted when:**
-- Returns the full snapshot dict for the order (order_id, customer embed, items list, total_amount, status, created_at)
+- Returns an `OrderSnapshotResponse` with the full snapshot (order_id, customer embed, items list, total_amount, status, created_at)
 - Returns `None` if no order with that ID exists
 
 ---
@@ -153,7 +160,7 @@ def get_order(self, order_id: int) -> dict | None:
 
 **Signature:**
 ```{code-cell} python
-def get_order_history(self, customer_id: int) -> list[dict]:
+def get_order_history(self, customer_id: int) -> list[OrderSnapshotResponse]:
 ```
 
 **Accepted when:**
@@ -169,11 +176,13 @@ def get_order_history(self, customer_id: int) -> list[dict]:
 
 **Signature:**
 ```{code-cell} python
-def revenue_by_category(self) -> list[dict]:
+def revenue_by_category(self) -> list[CategoryRevenueResponse]:
 ```
 
+See `models/responses.py` for `CategoryRevenueResponse`.
+
 **Accepted when:**
-- Returns a list of `{"category": str, "total_revenue": float}` dicts
+- Returns a list of `CategoryRevenueResponse` objects (each has `category` and `total_revenue`)
 - Sorted by `total_revenue` descending
 - Covers all categories that have completed orders — no hardcoded category list
 

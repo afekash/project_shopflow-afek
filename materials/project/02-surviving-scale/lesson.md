@@ -79,7 +79,7 @@ When product data is updated, the cache entry must be explicitly removed so the 
 
 **Signature:** (unchanged from Phase 1)
 ```{code-cell} python
-def get_product(self, product_id: int) -> dict | None:
+def get_product(self, product_id: int) -> ProductResponse | None:
 ```
 
 **Accepted when:**

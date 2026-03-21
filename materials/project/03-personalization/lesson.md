@@ -65,11 +65,13 @@ Recommendations are ranked by co-purchase frequency: the more often two products
 
 **Signature:**
 ```{code-cell} python
-def get_recommendations(self, product_id: int, limit: int = 5) -> list[dict]:
+def get_recommendations(self, product_id: int, limit: int = 5) -> list[RecommendationResponse]:
 ```
 
+See `models/responses.py` for `RecommendationResponse`.
+
 **Accepted when:**
-- Returns a list of `{"product_id": int, "name": str, "score": int}` dicts
+- Returns a list of `RecommendationResponse` objects (each has `product_id`, `name`, and `score`)
 - Sorted by `score` descending (highest co-purchase frequency first)
 - The queried product itself is never in the results
 - Returns at most `limit` results
