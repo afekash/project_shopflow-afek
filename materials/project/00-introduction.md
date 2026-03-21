@@ -1,5 +1,28 @@
 # ShopFlow — Project Introduction
 
+## Getting Started
+
+Before diving into the project story, set up your environment:
+
+```bash
+# 1. Create a new repository and scaffold the project
+git clone <your-repo-url> my-capstone
+cd my-capstone
+bash <path-to-course-repo>/materials/project/init-project.sh .
+
+# 2. Start all 4 databases
+docker compose up -d
+
+# 3. Install Python dependencies
+uv sync
+```
+
+No manual database creation needed — the test framework handles it automatically.
+
+Once setup is complete, read the rest of this document, then move to the Phase 1 lesson.
+
+---
+
 ## The Business
 
 ShopFlow is an online retailer that sells five product categories: **electronics, clothing, books, food, and home goods**.
