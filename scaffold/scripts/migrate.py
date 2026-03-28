@@ -21,31 +21,42 @@ load_dotenv()
 
 def migrate(engine, mongo_db, redis_client=None, neo4j_driver=None):
     
-    """Create all database tables, indexes, and constraints."""
-    """יישום הלוגיקה ליצירת המבנים במסדי הנתונים"""
+    """
+    Create all database tables, indexes, and constraints.
+    This function handles the structural setup for Postgres, MongoDB, and Neo4j.
+    """
     
-    # 1. יצירת הטבלאות ב-PostgreSQL
-    # אנחנו מייבאים את ה-Base כאן כדי לוודא שכל המודלים שכתבנו נרשמו בו
+    # 1. PostgreSQL: Create relational tables
     from ecommerce_pipeline.postgres_models import Base
-    print("PostgreSQL: Creating tables based on postgres_models.py...")
+    print("PostgreSQL: Creating tables based on SQLAlchemy models...")
+    # Base.metadata.create_all uses the models defined in postgres_models.py
     Base.metadata.create_all(bind=engine)
     
-    # 2. יצירת אינדקסים ב-MongoDB (חשוב מאוד לטסטים של Phase 1)
-    print("MongoDB: Creating indexes for products and snapshots...")
+    # 2. MongoDB: Create indexes for optimized document retrieval
+    print("MongoDB: Creating indexes for products and order snapshots...")
     
-    # מוודא שחיפוש מוצר לפי ID יהיה מהיר וייחודי
+    # Ensure unique constraint on product ID for fast lookups
     mongo_db.products.create_index("id", unique=True)
     
-    # אינדקס טקסטואלי - כדי שנוכל לחפש מילים בתוך השם והתיאור של המוצר
+    # Create a compound text index to enable full-text search on name and description
     mongo_db.products.create_index([("name", "text"), ("description", "text")])
     
-
-    # אינדקס לקטגוריה
+    # Index by category for faster filtering
     mongo_db.products.create_index("category")
     
-    # אינדקסים להזמנות (Snapshots)
+    # Ensure each order snapshot has a unique order_id
     mongo_db.order_snapshots.create_index("order_id", unique=True)
 
+    # 3. Neo4j: Create graph constraints (Phase 3)
+    if neo4j_driver:
+        print("Neo4j: Creating uniqueness constraints for the Product graph...")
+        with neo4j_driver.session() as session:
+            # Phase 3: Ensure each Product node has a unique ID to prevent duplicates in the graph
+            session.run("""
+                CREATE CONSTRAINT product_id IF NOT EXISTS 
+                FOR (p:Product) REQUIRE p.id IS UNIQUE
+            """)
+    
     print("Migration logic implemented and executed successfully!")
 
 

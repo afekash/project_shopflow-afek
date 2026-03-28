@@ -79,7 +79,7 @@ class DBAccess:
         from ecommerce_pipeline.models.responses import OrderCustomerEmbed, OrderItemResponse, OrderResponse
         from datetime import datetime
 
-        # 1. --- Phase 2: FAST PRE-CHECK ---
+       # --- Phase 2: FAST PRE-CHECK (Redis) ---
         # Before starting heavy DB operations, check Redis for stock availability
         if self._redis:
             for item_req in items:
@@ -87,10 +87,10 @@ class DBAccess:
                 if redis_stock is not None and int(redis_stock) < item_req.quantity:
                     raise ValueError(f"Insufficient stock (Redis pre-check) for product {item_req.product_id}")
 
-        # 2. Start a SQLAlchemy session
+        # Start a SQLAlchemy session for Postgres transaction
         with self._pg_session_factory() as session:
             try:
-                # 3. Fetch customer details
+                # Fetch customer details
                 customer = session.query(Customer).filter(Customer.id == customer_id).first()
                 if not customer:
                     raise ValueError(f"Customer {customer_id} not found")
@@ -99,7 +99,7 @@ class DBAccess:
                 snapshot_items = []
                 order_items_to_save = []
 
-                # 4. Process items: Check stock and calculate totals
+                # Process items: Check stock and calculate totals
                 for item_req in items:
                     # 'with_for_update' locks the row for concurrency safety
                     product = session.query(ProductInventory).filter(
@@ -114,7 +114,6 @@ class DBAccess:
 
                     # Update stock levels in Postgres
                     product.stock_quantity -= item_req.quantity
-                    
                     price_at_order = float(product.price)
                     total_amount += price_at_order * item_req.quantity
 
@@ -124,7 +123,7 @@ class DBAccess:
                         quantity=item_req.quantity
                     ))
 
-                    # Prepare Item for MongoDB snapshot
+                    # Prepare Item for MongoDB snapshot (Phase 1)
                     snapshot_items.append(OrderItemResponse(
                         product_id=product.id,
                         product_name="Product Details", 
@@ -132,20 +131,20 @@ class DBAccess:
                         unit_price=price_at_order
                     ))
 
-                # 5. Create the main Order in Postgres
+                # Create the main Order in Postgres
                 new_order = Order(
                     customer_id=customer_id,
                     total_amount=total_amount
                 )
                 session.add(new_order)
-                session.flush() # Generate the order_id
+                session.flush() # Generate the order_id for the items
 
-                # Link and save items
+                # Link and save items to Postgres
                 for oi in order_items_to_save:
                     oi.order_id = new_order.order_id
                     session.add(oi)
 
-                # 6. Save MongoDB snapshot
+                # Save MongoDB snapshot (Phase 1)
                 current_time = datetime.now().isoformat()
                 self.save_order_snapshot(
                     order_id=new_order.order_id,
@@ -160,16 +159,36 @@ class DBAccess:
                     created_at=current_time
                 )
 
-                # 7. Final Commit to Postgres
+                # Final Commit to Postgres - transactional boundary
                 session.commit()
 
-                # 8. --- Phase 2: UPDATE REDIS INVENTORY ---
+                # --- Phase 2: UPDATE REDIS INVENTORY ---
                 # Update Redis counters only after successful DB commit
                 if self._redis:
                     for item in items:
                         self._redis.decrby(f"inventory:{item.product_id}", item.quantity)
 
-                # 9. Return the successful response
+                # --- Phase 3: UPDATE NEO4J GRAPH ---
+                # Update co-purchase relationships in the graph (best-effort)
+                if self._neo4j:
+                    with self._neo4j.session() as neo_session:
+                        # Extract product IDs to build combinations
+                        product_ids = [int(item.product_id) for item in items]
+                        
+                        # We need at least 2 items to create a 'BOUGHT_TOGETHER' link
+                        if len(product_ids) >= 2:
+                            # Use 'combinations' to generate unique pairs (A,B), (A,C)...
+                            for id1, id2 in combinations(product_ids, 2):
+                                # MERGE ensures we don't create duplicate nodes or edges
+                                neo_session.run("""
+                                    MERGE (a:Product {id: $id1})
+                                    MERGE (b:Product {id: $id2})
+                                    MERGE (a)-[r:BOUGHT_TOGETHER]-(b)
+                                    ON CREATE SET r.weight = 1
+                                    ON MATCH SET r.weight = r.weight + 1
+                                """, id1=id1, id2=id2)
+
+                # Return the successful response
                 return OrderResponse(
                     order_id=new_order.order_id,
                     customer_id=customer_id,
@@ -180,12 +199,9 @@ class DBAccess:
                 )
 
             except Exception as e:
+                # Rollback Postgres transaction on any failure
                 session.rollback()
-                # Assuming logger is available in self or global scope
-                if hasattr(self, 'logger'):
-                    self.logger.error(f"Order creation failed: {e}")
-                else:
-                    print(f"Order creation failed: {e}")
+                print(f"Order creation failed: {e}")
                 raise e
 
     def get_product(self, product_id: int) -> ProductResponse | None:
@@ -500,9 +516,54 @@ class DBAccess:
     #     seed_data/historical_orders.json.
 
     def get_recommendations(self, product_id: int, limit: int = 5) -> list[RecommendationResponse]:
-        """Return product recommendations based on co-purchase patterns.
-
-        See RecommendationResponse in models/responses.py for the return shape.
-        Sorted by score descending. Returns an empty list if no co-purchase relationships exist.
         """
-        raise NotImplementedError("Phase 3: implement get_recommendations")
+        Phase 3: Get product recommendations using Neo4j graph data.
+        This function finds products often bought together with the current one.
+        """
+        from ecommerce_pipeline.models.responses import RecommendationResponse
+        
+        # 1. Safety check: ensure the Neo4j driver is available
+        if not self._neo4j:
+            return []
+
+        # 2. Cypher Query:
+        # - MATCH: Finds 'BOUGHT_TOGETHER' relationships
+        # - WHERE: Filters out the current product itself (no self-recommendation)
+        # - RETURN: Extracts product details and the edge weight as a 'score'
+        query = """
+        MATCH (p:Product {id: $pid})-[r:BOUGHT_TOGETHER]-(rec:Product)
+        WHERE rec.id <> $pid
+        RETURN rec.id AS product_id, rec.name AS name, r.weight AS score
+        ORDER BY score DESC
+        LIMIT $limit
+        """
+        
+        session = None
+        try:
+            # 3. Open a dedicated session for this query
+            session = self._neo4j.session()
+            
+            # 4. Execute the query with typed parameters to prevent driver hanging
+            result = session.run(query, pid=int(product_id), limit=int(limit))
+            
+            # 5. Parse the result into a list of RecommendationResponse objects
+            return [
+                RecommendationResponse(
+                    product_id=record["product_id"],
+                    name=record["name"],
+                    score=record["score"]
+                )
+                for record in result
+            ]
+            
+        except Exception as e:
+            # If something goes wrong with Neo4j, we log it and return an empty list
+            # so the whole API doesn't crash.
+            print(f"Neo4j recommendation error: {e}")
+            return []
+            
+        finally:
+            # 6. CRITICAL: Always close the session to free up the connection pool.
+            # This prevents the 'hanging' issue during tests.
+            if session:
+                session.close()

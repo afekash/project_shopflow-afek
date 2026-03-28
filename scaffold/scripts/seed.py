@@ -17,6 +17,7 @@ Seed data files are in the seed_data/ directory.
 
 import os
 import json
+import itertools 
 from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
 from pathlib import Path
@@ -52,8 +53,9 @@ def seed(engine, mongo_db, redis_client=None, neo4j_driver=None):
     session = Session()
 
     try:
+        
         # 1. Load Customers into Postgres
-        # Reading from customers.json and mapping to the Customer model
+        #  Phase 1 — load products and customers into Postgres + MongoDB
         print("Seeding Customers...")
         with open(SEED_DIR / "customers.json", 'r', encoding='utf-8') as f:
             for c in json.load(f):
@@ -96,7 +98,7 @@ def seed(engine, mongo_db, redis_client=None, neo4j_driver=None):
                 for p_id in o['product_ids']:
                     session.add(OrderItem(order_id=o['order_id'], product_id=p_id))
 
-        # --- CRITICAL STEP: Commit and Synchronize Sequences ---
+        
         # First, persist all records from the JSON files
         session.commit()
 
@@ -107,6 +109,7 @@ def seed(engine, mongo_db, redis_client=None, neo4j_driver=None):
         session.commit()
         
         print("Postgres sequences synchronized successfully!")
+
 
         # --- Phase 2: Initialize Redis inventory counters ---redis
         if redis_client:
@@ -119,6 +122,44 @@ def seed(engine, mongo_db, redis_client=None, neo4j_driver=None):
                 redis_client.set(redis_key, p.stock_quantity)
             print(f"Redis inventory synced for {len(products)} products.")
 
+
+            # --- Phase 3: Build Neo4j co-purchase graph ---
+        if neo4j_driver:
+            print("Neo4j: Seeding co-purchase graph (BOUGHT_TOGETHER)...")
+            
+            # Loading products to map names to IDs in the graph
+            with open(SEED_DIR / "products.json", 'r', encoding='utf-8') as f:
+                product_list = json.load(f)
+                product_map = {p['id']: p['name'] for p in product_list}
+            
+            with open(SEED_DIR / "historical_orders.json", 'r', encoding='utf-8') as f:
+                historical_orders = json.load(f)
+                
+            with neo4j_driver.session() as session:
+                for o in historical_orders:
+                    # In historical_orders.json, the field is 'product_ids'
+                    p_ids = o.get('product_ids', [])
+                    
+                    if len(p_ids) < 2:
+                        continue
+                    
+                    # Generate all unique pairs from the order
+                    for id1, id2 in itertools.combinations(p_ids, 2):
+                        # MERGE ensures nodes/edges are created if missing, and updates weight
+                        session.run("""
+                            MERGE (a:Product {id: $id1})
+                            ON CREATE SET a.name = $name1
+                            MERGE (b:Product {id: $id2})
+                            ON CREATE SET b.name = $name2
+                            MERGE (a)-[r:BOUGHT_TOGETHER]-(b)
+                            ON CREATE SET r.weight = 1
+                            ON MATCH SET r.weight = r.weight + 1
+                        """, 
+                        id1=int(id1), name1=product_map.get(id1, "Unknown"),
+                        id2=int(id2), name2=product_map.get(id2, "Unknown"))
+            
+            print(f"Neo4j: Graph seeded with BOUGHT_TOGETHER edges.")
+
     except Exception as e:
         # Rollback in case of any failure to maintain data integrity
         session.rollback()
@@ -128,7 +169,7 @@ def seed(engine, mongo_db, redis_client=None, neo4j_driver=None):
         session.close()
     
 
-      #  Phase 1 — load products and customers into Postgres + MongoDB
+      
 
     
 
