@@ -62,27 +62,35 @@ class DBAccess:
         See OrderItemRequest in models/requests.py for the input shape.
         See OrderResponse in models/responses.py for the return shape.
 
-        Raises ValueError if any product has insufficient stock. When that
+        Raises ValueError if any product uv run pytest tests/test_phase2.py -vhas insufficient stock. When that
         happens, no data is modified in any database.
 
         After the order is persisted transactionally, a denormalized snapshot
         is saved for read access, and downstream counters and graph edges are
         updated (best-effort, does not roll back the order on failure).
+        
         """
-        """Place an order atomically across Postgres and MongoDB."""
-        """
-        Place an order atomically across Postgres and MongoDB.
-        Uses a transaction to ensure stock is updated and the order is saved.
+        """Place an order atomically across Postgres and MongoDB.
+        
+        Includes Phase 2: Redis inventory pre-check and post-commit updates.
         """
         from sqlalchemy.orm import Session
         from ecommerce_pipeline.postgres_models import Order, OrderItem, ProductInventory, Customer
         from ecommerce_pipeline.models.responses import OrderCustomerEmbed, OrderItemResponse, OrderResponse
         from datetime import datetime
 
-        # 1. Start a SQLAlchemy session from the factory
+        # 1. --- Phase 2: FAST PRE-CHECK ---
+        # Before starting heavy DB operations, check Redis for stock availability
+        if self._redis:
+            for item_req in items:
+                redis_stock = self._redis.get(f"inventory:{item_req.product_id}")
+                if redis_stock is not None and int(redis_stock) < item_req.quantity:
+                    raise ValueError(f"Insufficient stock (Redis pre-check) for product {item_req.product_id}")
+
+        # 2. Start a SQLAlchemy session
         with self._pg_session_factory() as session:
             try:
-                # 2. Fetch customer details for the MongoDB snapshot
+                # 3. Fetch customer details
                 customer = session.query(Customer).filter(Customer.id == customer_id).first()
                 if not customer:
                     raise ValueError(f"Customer {customer_id} not found")
@@ -91,9 +99,9 @@ class DBAccess:
                 snapshot_items = []
                 order_items_to_save = []
 
-                # 3. Process items: Check stock and calculate totals
+                # 4. Process items: Check stock and calculate totals
                 for item_req in items:
-                    # 'with_for_update' locks the row to prevent concurrent stock issues
+                    # 'with_for_update' locks the row for concurrency safety
                     product = session.query(ProductInventory).filter(
                         ProductInventory.id == item_req.product_id
                     ).with_for_update().first()
@@ -107,10 +115,8 @@ class DBAccess:
                     # Update stock levels in Postgres
                     product.stock_quantity -= item_req.quantity
                     
-                    # Convert Numeric/Decimal to float for calculations and response
                     price_at_order = float(product.price)
-                    item_total = price_at_order * item_req.quantity
-                    total_amount += item_total
+                    total_amount += price_at_order * item_req.quantity
 
                     # Prepare OrderItem for Postgres
                     order_items_to_save.append(OrderItem(
@@ -119,7 +125,6 @@ class DBAccess:
                     ))
 
                     # Prepare Item for MongoDB snapshot
-                    # (Note: Using a placeholder for name if not in Inventory table)
                     snapshot_items.append(OrderItemResponse(
                         product_id=product.id,
                         product_name="Product Details", 
@@ -127,24 +132,20 @@ class DBAccess:
                         unit_price=price_at_order
                     ))
 
-                # 4. Create the main Order in Postgres
-                # We do NOT pass order_id, Postgres generates it via autoincrement
+                # 5. Create the main Order in Postgres
                 new_order = Order(
                     customer_id=customer_id,
                     total_amount=total_amount
                 )
                 session.add(new_order)
-                
-                # Flush tells Postgres to execute the INSERT and return the new ID
-                session.flush() 
+                session.flush() # Generate the order_id
 
-                # Link items to the newly generated order_id
+                # Link and save items
                 for oi in order_items_to_save:
                     oi.order_id = new_order.order_id
                     session.add(oi)
 
-                # 5. Save denormalized snapshot to MongoDB
-                # This happens before the commit to keep everything in sync
+                # 6. Save MongoDB snapshot
                 current_time = datetime.now().isoformat()
                 self.save_order_snapshot(
                     order_id=new_order.order_id,
@@ -159,9 +160,16 @@ class DBAccess:
                     created_at=current_time
                 )
 
-                # 6. Final Commit - If we get here, both databases are updated
+                # 7. Final Commit to Postgres
                 session.commit()
 
+                # 8. --- Phase 2: UPDATE REDIS INVENTORY ---
+                # Update Redis counters only after successful DB commit
+                if self._redis:
+                    for item in items:
+                        self._redis.decrby(f"inventory:{item.product_id}", item.quantity)
+
+                # 9. Return the successful response
                 return OrderResponse(
                     order_id=new_order.order_id,
                     customer_id=customer_id,
@@ -172,9 +180,12 @@ class DBAccess:
                 )
 
             except Exception as e:
-                # If anything fails (Postgres OR MongoDB), undo all Postgres changes
                 session.rollback()
-                logger.error(f"Order creation failed: {e}")
+                # Assuming logger is available in self or global scope
+                if hasattr(self, 'logger'):
+                    self.logger.error(f"Order creation failed: {e}")
+                else:
+                    print(f"Order creation failed: {e}")
                 raise e
 
     def get_product(self, product_id: int) -> ProductResponse | None:
@@ -189,18 +200,49 @@ class DBAccess:
         See ProductResponse in models/responses.py for the return shape.
         Returns None if not found.
         """
-       # Search in product_catalog for consistency with the tests
+        """
+        Phase 2: Fetch product from Redis cache first (Cache-Aside pattern).
+        On miss, fetch from MongoDB, then populate Redis with a 300s TTL.
+        """
+       
+       # 1. Define the Redis key using the convention 'product:{id}'
+        redis_key = f"product:{product_id}"
+
+        try:
+            # 2. Attempt to fetch the product from Redis cache
+            cached_product = self._redis.get(redis_key)
+            if cached_product:
+                # Cache Hit: Deserialize the JSON string back into a dictionary
+                product_dict = json.loads(cached_product)
+                return ProductResponse(**product_dict)
+        except Exception as e:
+            # Note: Assuming logger is imported at the top of your file
+            print(f"Redis cache error: {e}")
+
+        # 3. Cache Miss: Fetch from the primary store (MongoDB)
+        # Fix: Using self._mongo_db instead of self._mongo
         product_data = self._mongo_db.product_catalog.find_one({"id": int(product_id)})
 
         if not product_data:
             return None
             
+        # Clean up the MongoDB internal ID
         product_data.pop("_id", None)
-        return ProductResponse(**product_data)
-        
-        """
-        raise NotImplementedError("Phase 1: implement get_product")
-        """
+        product_res = ProductResponse(**product_data)
+
+        try:
+            # 4. Populate the cache for future requests
+            # We set a Time-To-Live (TTL) of 300 seconds (5 minutes)
+            self._redis.setex(
+                redis_key, 
+                300, 
+                json.dumps(product_res.model_dump())
+            )
+        except Exception as e:
+            print(f"Failed to update Redis cache: {e}")
+
+        return product_res
+
 
     def search_products(
         self,
@@ -402,28 +444,51 @@ class DBAccess:
     #     on miss with a 300-second TTL).
 
     def invalidate_product_cache(self, product_id: int) -> None:
-        """Remove a product's cached entry.
+        """
+        Phase 2: Remove a product's cached entry.
+        Ensures the next read fetches fresh data from MongoDB.
+        """
+        redis_key = f"product:{product_id}"
+        # Delete the key from Redis. It's a no-op if the key doesn't exist.
+        self._redis.delete(redis_key)
 
-        Call this after updating a product's data so the next read fetches
-        fresh data from the primary store. No-op if no entry exists.
         """
         raise NotImplementedError("Phase 2: implement invalidate_product_cache")
+        """
 
     def record_product_view(self, customer_id: int, product_id: int) -> None:
-        """Record that a customer viewed a product.
+        """
+        Phase 2: Record a customer's product view in a Redis list.
+        Keeps only the 10 most recent views using LPUSH and LTRIM.
+        """
+        redis_key = f"recently_viewed:{customer_id}"
+        
+        # Add the product_id to the front of the list
+        self._redis.lpush(redis_key, product_id)
+        
+        # Keep only the first 10 elements (index 0 to 9)
+        self._redis.ltrim(redis_key, 0, 9)
 
-        Maintains a bounded, ordered list of the customer's most recently
-        viewed products (most recent first, capped at 10 entries).
         """
         raise NotImplementedError("Phase 2: implement record_product_view")
+        """
 
     def get_recently_viewed(self, customer_id: int) -> list[int]:
-        """Return up to 10 recently viewed product IDs for a customer.
+        """
+        Phase 2: Return the last 10 product IDs for a customer.
+        Returns an empty list if no history exists.
+        """
+        redis_key = f"recently_viewed:{customer_id}"
+        
+        # Fetch all elements in the range 0-9
+        views = self._redis.lrange(redis_key, 0, 9)
+        
+        # Redis returns strings, so we convert them back to integers
+        return [int(v) for v in views]
 
-        Returns IDs as integers, most recently viewed first.
-        Returns an empty list if no views have been recorded.
         """
         raise NotImplementedError("Phase 2: implement get_recently_viewed")
+        """
 
     # ── Phase 3 ───────────────────────────────────────────────────────────────
     #

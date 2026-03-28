@@ -108,6 +108,17 @@ def seed(engine, mongo_db, redis_client=None, neo4j_driver=None):
         
         print("Postgres sequences synchronized successfully!")
 
+        # --- Phase 2: Initialize Redis inventory counters ---redis
+        if redis_client:
+            print("Seeding Redis inventory counters...")
+            # We query Postgres to get the latest authoritative stock levels
+            products = session.query(ProductInventory).all()
+            for p in products:
+                # Key pattern from conventions: inventory:{product_id}
+                redis_key = f"inventory:{p.id}"
+                redis_client.set(redis_key, p.stock_quantity)
+            print(f"Redis inventory synced for {len(products)} products.")
+
     except Exception as e:
         # Rollback in case of any failure to maintain data integrity
         session.rollback()
