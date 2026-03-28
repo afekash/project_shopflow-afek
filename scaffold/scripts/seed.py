@@ -16,16 +16,20 @@ Seed data files are in the seed_data/ directory.
 """
 
 import os
+import json
+from sqlalchemy import text
+from sqlalchemy.orm import sessionmaker
 from pathlib import Path
 
 from dotenv import load_dotenv
-
+from ecommerce_pipeline.postgres_models import Customer, Order, OrderItem, ProductInventory
 load_dotenv()
 
 SEED_DIR = Path(__file__).parent.parent / "seed_data"
 
 
 def seed(engine, mongo_db, redis_client=None, neo4j_driver=None):
+
     """Load seed data into all databases.
 
     Add your seeding logic here incrementally as you progress through phases.
@@ -41,7 +45,81 @@ def seed(engine, mongo_db, redis_client=None, neo4j_driver=None):
         customers = json.load(open(SEED_DIR / "customers.json"))
         historical_orders = json.load(open(SEED_DIR / "historical_orders.json"))
     """
-    pass  # TODO: Phase 1 — load products and customers into Postgres + MongoDB
+
+
+    # Initialize SQLAlchemy session
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    try:
+        # 1. Load Customers into Postgres
+        # Reading from customers.json and mapping to the Customer model
+        print("Seeding Customers...")
+        with open(SEED_DIR / "customers.json", 'r', encoding='utf-8') as f:
+            for c in json.load(f):
+                session.add(Customer(
+                    id=c['id'],
+                    name=c['name'], 
+                    email=c['email'], 
+                    address=c['address']
+                ))
+
+        # 2. Load Products (Postgres + MongoDB)
+        # Products are stored in Postgres (Inventory) and MongoDB (Catalog)
+        print("Seeding Products...")
+        with open(SEED_DIR / "products.json", 'r', encoding='utf-8') as f:
+            for p in json.load(f):
+                # Populate Postgres 'inventory' table
+                session.add(ProductInventory(
+                    id=p['id'], 
+                    price=p['price'],
+                    category=p.get('category', 'General'),  # <--- תוסיפי את השורה הזו כאן!
+                    stock_quantity=p['stock_quantity']
+                ))
+                
+                # Populate MongoDB 'product_catalog' collection
+                # Upsert is used to prevent duplicate products
+                mongo_db.product_catalog.update_one({"id": p['id']}, {"$set": p}, upsert=True)
+
+        # 3. Load Historical Orders and OrderItems
+        # This data is used for testing order history and analytics
+        print("Seeding Historical Orders...")
+        with open(SEED_DIR / "historical_orders.json", 'r', encoding='utf-8') as f:
+            for o in json.load(f):
+                # Create the main Order record
+                session.add(Order(
+                    order_id=o['order_id'], 
+                    customer_id=o['customer_id'], 
+                    created_at=o['created_at']
+                ))
+                # Create associated OrderItems
+                for p_id in o['product_ids']:
+                    session.add(OrderItem(order_id=o['order_id'], product_id=p_id))
+
+        # --- CRITICAL STEP: Commit and Synchronize Sequences ---
+        # First, persist all records from the JSON files
+        session.commit()
+
+        # Synchronize Postgres sequence for order_id.
+        # This prevents 'UniqueViolation' errors when creating new orders in tests.
+        # It sets the next auto-increment value to MAX(order_id) + 1.
+        session.execute(text("SELECT setval('orders_order_id_seq', (SELECT max(order_id) FROM orders));"))
+        session.commit()
+        
+        print("Postgres sequences synchronized successfully!")
+
+    except Exception as e:
+        # Rollback in case of any failure to maintain data integrity
+        session.rollback()
+        print(f"Error during seeding: {e}")
+        raise e
+    finally:
+        session.close()
+    
+
+      #  Phase 1 — load products and customers into Postgres + MongoDB
+
+    
 
 
 # ---------------------------------------------------------------------------

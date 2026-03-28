@@ -20,6 +20,35 @@ load_dotenv()
 
 
 def migrate(engine, mongo_db, redis_client=None, neo4j_driver=None):
+    
+    """Create all database tables, indexes, and constraints."""
+    """יישום הלוגיקה ליצירת המבנים במסדי הנתונים"""
+    
+    # 1. יצירת הטבלאות ב-PostgreSQL
+    # אנחנו מייבאים את ה-Base כאן כדי לוודא שכל המודלים שכתבנו נרשמו בו
+    from ecommerce_pipeline.postgres_models import Base
+    print("PostgreSQL: Creating tables based on postgres_models.py...")
+    Base.metadata.create_all(bind=engine)
+    
+    # 2. יצירת אינדקסים ב-MongoDB (חשוב מאוד לטסטים של Phase 1)
+    print("MongoDB: Creating indexes for products and snapshots...")
+    
+    # מוודא שחיפוש מוצר לפי ID יהיה מהיר וייחודי
+    mongo_db.products.create_index("id", unique=True)
+    
+    # אינדקס טקסטואלי - כדי שנוכל לחפש מילים בתוך השם והתיאור של המוצר
+    mongo_db.products.create_index([("name", "text"), ("description", "text")])
+    
+
+    # אינדקס לקטגוריה
+    mongo_db.products.create_index("category")
+    
+    # אינדקסים להזמנות (Snapshots)
+    mongo_db.order_snapshots.create_index("order_id", unique=True)
+
+    print("Migration logic implemented and executed successfully!")
+
+
     """Create all database tables, indexes, and constraints.
 
     This function is called after reset_all() has wiped everything.
@@ -30,8 +59,9 @@ def migrate(engine, mongo_db, redis_client=None, neo4j_driver=None):
         mongo_db: pymongo Database instance
         redis_client: redis.Redis instance or None (Phase 2+)
         neo4j_driver: neo4j.Driver instance or None (Phase 3)
+    
+    pass  #  Phase 1 — create Postgres tables and MongoDB indexes
     """
-    pass  # TODO: Phase 1 — create Postgres tables and MongoDB indexes
 
 
 # ---------------------------------------------------------------------------
@@ -79,6 +109,17 @@ def _neo4j_driver():
 
 
 def main():
+    """
+    test of DEBUG show me 
+    print("\n" + "="*50)
+    print(f"DEBUG: מחפש קובץ .env בכתובת: {os.getcwd()}")
+    print(f"DEBUG: האם קובץ .env קיים? {os.path.exists('.env')}")
+    print(f"DEBUG: שם ה-DB שהמחשב קורא: '{os.environ.get('POSTGRES_DB')}'")
+    print(f"DEBUG: ה-URL המלא שנוצר: {_pg_url()}")
+    print("="*50 + "\n")
+    """
+
+
     from sqlalchemy import create_engine
 
     from ecommerce_pipeline.reset import reset_all
