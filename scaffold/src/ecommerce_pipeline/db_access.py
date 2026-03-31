@@ -399,52 +399,63 @@ class DBAccess:
         """
 
     def revenue_by_category(self) -> list[CategoryRevenueResponse]:
-        """Compute total revenue per product category, sorted by total_revenue descending.
-
-        See CategoryRevenueResponse in models/responses.py for the return shape.
         """
+        Compute total revenue per product category using MongoDB Aggregation.
+        
+        This method uses an aggregation pipeline on the 'order_snapshots' collection.
+        It unwinds the items, looks up the category from the product catalog,
+        and sums up the revenue (quantity * unit_price) per category.
+        
+        Returns an empty list [] if no snapshots exist, ensuring the 'empty' test passes.
         """
-        Compute total revenue per product category based on Postgres data.
-        Returns a list of CategoryRevenueResponse sorted by total_revenue descending.
-        """
-        from sqlalchemy import func
-        from sqlalchemy.orm import Session
-        from ecommerce_pipeline.postgres_models import OrderItem, ProductInventory
         from ecommerce_pipeline.models.responses import CategoryRevenueResponse
 
-        # 1. Start a session to query Postgres via the session factory
-        with self._pg_session_factory() as session:
+        # 1. Define the aggregation pipeline
+        pipeline = [
+            # Deconstruct the items array from the order snapshots
+            {"$unwind": "$items"},
             
-            # 2. Build the aggregation query using a JOIN
-            # We multiply quantity by price, group by category, and sum the results
-            query = (
-                session.query(
-                    ProductInventory.category.label("category"),
-                    func.sum(OrderItem.quantity * ProductInventory.price).label("total_revenue")
-                )
-                .join(OrderItem, ProductInventory.id == OrderItem.product_id)
-                .group_by(ProductInventory.category)
-                .order_by(func.sum(OrderItem.quantity * ProductInventory.price).desc())
-            )
-
-            results = query.all()
-
-            # 3. Convert raw database rows into our Pydantic response models
-            # We use float() to ensure compatibility with the CategoryRevenueResponse schema
-            category_report = [
-                CategoryRevenueResponse(
-                    category=row.category, 
-                    total_revenue=float(row.total_revenue)
-                )
-                for row in results
-            ]
+            # Join with the product_catalog to retrieve the category for each product
+            {
+                "$lookup": {
+                    "from": "product_catalog",
+                    "localField": "items.product_id",
+                    "foreignField": "id",
+                    "as": "product_info"
+                }
+            },
             
-            return category_report
+            # Flatten the product_info array returned by the lookup
+            {"$unwind": "$product_info"},
+            
+            # Group by category and calculate total revenue
+            {
+                "$group": {
+                    "_id": "$product_info.category",
+                    "total_revenue": {
+                        "$sum": {"$multiply": ["$items.quantity", "$items.unit_price"]}
+                    }
+                }
+            },
+            
+            # Sort categories by revenue in descending order
+            {"$sort": {"total_revenue": -1}},
+            
+            # Project fields to match the CategoryRevenueResponse model structure
+            {
+                "$project": {
+                    "category": "$_id",
+                    "total_revenue": 1,
+                    "_id": 0
+                }
+            }
+        ]
 
+        # 2. Execute the aggregation on the order_snapshots collection
+        cursor = self._mongo_db.order_snapshots.aggregate(pipeline)
 
-        """
-        raise NotImplementedError("Phase 1: implement revenue_by_category")
-        """
+        # 3. Map the resulting documents to Pydantic objects and return the list
+        return [CategoryRevenueResponse(**doc) for doc in cursor]
 
 
     # ── Phase 2 ───────────────────────────────────────────────────────────────

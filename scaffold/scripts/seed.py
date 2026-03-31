@@ -58,7 +58,7 @@ def seed(engine, mongo_db, redis_client=None, neo4j_driver=None):
         #  Phase 1 — load products and customers into Postgres + MongoDB
         print("Seeding Customers...")
         with open(SEED_DIR / "customers.json", 'r', encoding='utf-8') as f:
-            for c in json.load(f):
+            for c in json.load(f): 
                 session.add(Customer(
                     id=c['id'],
                     name=c['name'], 
@@ -130,12 +130,12 @@ def seed(engine, mongo_db, redis_client=None, neo4j_driver=None):
             # Loading products to map names to IDs in the graph
             with open(SEED_DIR / "products.json", 'r', encoding='utf-8') as f:
                 product_list = json.load(f)
-                product_map = {p['id']: p['name'] for p in product_list}
+                product_map = {int(p['id']): p['name'] for p in product_list}
             
             with open(SEED_DIR / "historical_orders.json", 'r', encoding='utf-8') as f:
                 historical_orders = json.load(f)
                 
-            with neo4j_driver.session() as session:
+            with neo4j_driver.session() as neo4j_session:
                 for o in historical_orders:
                     # In historical_orders.json, the field is 'product_ids'
                     p_ids = o.get('product_ids', [])
@@ -146,7 +146,7 @@ def seed(engine, mongo_db, redis_client=None, neo4j_driver=None):
                     # Generate all unique pairs from the order
                     for id1, id2 in itertools.combinations(p_ids, 2):
                         # MERGE ensures nodes/edges are created if missing, and updates weight
-                        session.run("""
+                        neo4j_session.run("""
                             MERGE (a:Product {id: $id1})
                             ON CREATE SET a.name = $name1
                             MERGE (b:Product {id: $id2})
